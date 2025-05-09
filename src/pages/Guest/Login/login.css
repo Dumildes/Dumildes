@@ -1,0 +1,163 @@
+
+.loginBox {
+    padding: 50px;
+    margin: 10px 20px;
+    border-radius: 10px;
+    box-shadow: 1px 5px 20px #e9e6e6;
+    margin: auto 20px;
+}
+
+
+.forgetBox {
+    max-width: 400px;
+    margin: auto;
+    margin-top: 30px;
+    border-radius: 10px;
+    border: 1px solid #e9e6e6;
+    box-shadow: -1px 2px #e9e6e6;
+}
+
+.loginBox .loginField,
+.forgetBox .loginField {
+    width: 100%;
+    margin: 5px 0;
+    padding: 0 2px;
+}
+
+
+.loginAside{
+    display: flex;
+    flex-direction: column;
+    padding: 30px;
+}
+
+.loginBox .logo {
+    display: flex;
+    justify-content: center;
+    margin: auto;
+}
+
+.logo img{
+    width: 200px;
+    height: auto;
+    max-width: none;
+}
+
+.loginBox .login {
+    width: 100%;
+    text-align: center;
+    font-weight: 500;
+    font-size: 15pt;
+    padding: 10px;
+    text-transform: capitalize;
+    margin-top: 10px;
+}
+
+.forgetBox .forgetTxt {
+    width: 380px;
+    margin-bottom: 0;
+    font-weight: 700;
+    font-size: 12pt;
+}
+
+.loginBox .paragrafos {
+    width: 100%;
+    padding: 0 3px;
+    font-size: 14pt;
+    font-weight: 300;
+    text-align: center;
+}
+
+.forgetBox .paragrafos {
+    width: 100%;
+    font-weight: 300;
+}
+
+.loginBox .loginBtn {
+    width: 100%;
+    margin-top: 15px;
+    display: flex;
+    justify-content: center;
+    text-transform: capitalize;
+    font-weight: 600;
+    font-size: 11pt;
+}
+
+.forgetBox .loginBtn {
+    width: 380px;
+    margin-top: 15px;
+}
+
+.loginBox .erroMessange, .forgetBox .erroMessange {
+    width: 380px;
+    background: #F99F1B;
+    padding: 5px 10px;
+    border-radius: 4px;
+    margin: auto;
+    margin-bottom: 15px;
+    color: #fff;
+    text-align: center;
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+.forgetNav {
+    max-width: 600px;
+    margin: auto;
+    height: 50px;
+    background: #fffefe;
+    border-bottom: 1px solid #ccc;
+    padding: 10px;
+}
+
+@media only screen and (min-width: 800px) {
+    .loginBox {
+        width: 60%;
+        max-width: 900px;
+        margin: auto;
+        border-radius: 10px;
+        box-shadow: 1px 5px 20px #e9e6e6;
+    }
+
+    .boxLogin .loginField {
+        width: 90%;
+        margin: 5px 0;
+        padding: 0 2px;
+    }
+
+    .loginBox .login {
+        width: 100%;
+        text-align: center;
+        font-weight: 600;
+        font-size: 18pt;
+        padding: 10px;
+        text-transform: capitalize;
+    }
+
+    .loginBox p {
+        padding: 0 3px;
+        font-weight: 300;
+        text-align: center;
+    }
+
+    .loginBox .loginBtn {
+        width: 90%;
+        margin-top: 15px;
+        display: flex;
+        justify-content: center;
+        text-transform: capitalize;
+        font-weight: 600;
+        font-size: 13pt;
+    }
+    .loginAside{
+        display: flex;
+        flex-direction: row-reverse;
+    }
+
+    .boxLogin{
+        width: 60%;
+        max-width:600px;
+        border-right: 1px solid #ccc;
+        padding: 30px;
+    }
+}

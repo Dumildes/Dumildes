@@ -1,0 +1,71 @@
+.provincia {
+    width: 90%;
+    padding: 10px;
+    margin: auto;
+}
+
+.provincia p {
+    text-align: center;
+    text-transform: uppercase;
+    font-weight: 450;
+    margin-top: 10px
+}
+
+.addProvincia{
+    width: 350px;
+    margin: auto;
+    border: 1px solid #ccc;
+    margin-top: 30px;
+    border-radius: 7px;
+    box-shadow: -1px 2px #e9e6e6;
+}
+.erroMessange {
+    width: 300px;
+    background: #F99F1B;
+    padding: 5px 10px;
+    border-radius: 4px;
+    margin: auto;
+    color: #fff;
+    text-align: center;
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+.municipio-modal{
+    width: 285px;
+}
+
+.tbProv{
+    cursor: pointer;
+}
+
+@media only screen and (min-width: 600px) {
+    .provincia {
+        width: 80%;
+        padding: 10px;
+        margin: auto;
+    }
+    .provincia .provinciaCard {
+        display: flex;
+        flex-direction: row;
+    }
+
+    .provBody{
+        width: 100%;
+        margin: auto;
+        gap: 20px;
+    }
+
+    .addProvincia{
+        width: 400px;
+        margin: auto;
+        border: 1px solid #ccc;
+        margin-top: 30px;
+        border-radius: 7px;
+        box-shadow: -1px 2px #e9e6e6;
+    }
+
+    .municipio-modal{
+        width: 400px;
+    }
+}
