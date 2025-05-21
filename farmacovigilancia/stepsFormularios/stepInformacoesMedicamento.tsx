@@ -2,16 +2,28 @@ import { Box, Grid, Typography } from "@material-ui/core";
 import TextField from '@material-ui/core/TextField';
 import { makeStyles } from '@material-ui/core/styles';
 import { useDispatch } from 'react-redux';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ChangeEvent } from 'react';
 
 const useStyles = makeStyles({
   gridItem: { margin: 8 }
 });
 
+interface FormData {
+  nome: string;
+  dosagem: string;
+  formaFarmaceutica: string;
+  fabricante: string;
+  enderecoFabricante: string;
+  lote: string;
+  dataFabrico: string;
+  dataValidade: string;
+  tipoAnalise: string;
+}
+
 export default function StepInformacoesMedicamento() {
   const classes = useStyles();
   const dispatch = useDispatch();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     nome: '',
     dosagem: '',
     formaFarmaceutica: '',
@@ -23,7 +35,7 @@ export default function StepInformacoesMedicamento() {
     tipoAnalise: ''
   });
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value

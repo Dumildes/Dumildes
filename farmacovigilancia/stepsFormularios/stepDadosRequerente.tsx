@@ -1,17 +1,27 @@
 import { Box, Grid, Typography } from "@material-ui/core";
 import TextField from '@material-ui/core/TextField';
 import { makeStyles } from '@material-ui/core/styles';
-import { useDispatch, useSelector } from 'react-redux';
-import { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { useState, useEffect, ChangeEvent } from 'react';
 
 const useStyles = makeStyles({
   gridItem: { margin: 8 }
 });
 
+interface FormData {
+  nome: string;
+  dataNascimento: string;
+  genero: string;
+  numeroRegistro: string;
+  endereco: string;
+  telefone: string;
+  email: string;
+}
+
 export default function StepDadosRequerente() {
   const classes = useStyles();
   const dispatch = useDispatch();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     nome: '',
     dataNascimento: '',
     genero: '',
@@ -21,7 +31,7 @@ export default function StepDadosRequerente() {
     email: ''
   });
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value

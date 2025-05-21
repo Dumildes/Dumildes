@@ -11,7 +11,7 @@ import LoadingBackdrop from '../../../load/loadingBackdrop';
 export default function FormularioAnaliseLaboratorial() {
   const dispatch = useDispatch();
   const [activeStep, setActiveStep] = useState(0);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const [open, setOpen] = useState(false);
 
   const steps = [
@@ -20,7 +20,7 @@ export default function FormularioAnaliseLaboratorial() {
     'Informações da Tecnologia de Saúde'
   ];
 
-  function getStepContent(stepIndex) {
+  function getStepContent(stepIndex: number) {
     switch (stepIndex) {
       case 0:
         return <InformacoesSolicitante />;
@@ -46,8 +46,8 @@ export default function FormularioAnaliseLaboratorial() {
     try {
       // Implementar lógica de submissão
       setOpen(false);
-    } catch (error) {
-      setErrorMessage(error.message);
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'Erro ao processar solicitação');
       setOpen(false);
     }
   };
