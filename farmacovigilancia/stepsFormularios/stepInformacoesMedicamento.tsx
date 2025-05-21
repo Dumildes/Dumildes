@@ -3,6 +3,7 @@ import TextField from '@material-ui/core/TextField';
 import { makeStyles } from '@material-ui/core/styles';
 import { useDispatch } from 'react-redux';
 import { useState, useEffect, ChangeEvent } from 'react';
+import { Checkbox, FormControlLabel, FormGroup } from '@mui/material';
 
 const useStyles = makeStyles({
   gridItem: { margin: 8 }
@@ -17,7 +18,13 @@ interface FormData {
   lote: string;
   dataFabrico: string;
   dataValidade: string;
-  tipoAnalise: string;
+  tiposAnalise: {
+    inspecaoFisica: boolean;
+    desintegracao: boolean;
+    cromatografia: boolean;
+    outro: boolean;
+  };
+  outroTipoAnalise: string;
 }
 
 export default function StepInformacoesMedicamento() {
@@ -32,14 +39,30 @@ export default function StepInformacoesMedicamento() {
     lote: '',
     dataFabrico: '',
     dataValidade: '',
-    tipoAnalise: ''
+    tiposAnalise: {
+      inspecaoFisica: false,
+      desintegracao: false,
+      cromatografia: false,
+      outro: false
+    },
+    outroTipoAnalise: ''
   });
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
+    if (e.target.type === 'checkbox') {
+      setFormData(prev => ({
+        ...prev,
+        tiposAnalise: {
+          ...prev.tiposAnalise,
+          [e.target.name]: e.target.checked
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [e.target.name]: e.target.value
+      }));
+    }
   };
 
   useEffect(() => {
@@ -56,7 +79,7 @@ export default function StepInformacoesMedicamento() {
       </Typography>
 
       <Grid container>
-        <Grid xs={12} md item className={classes.gridItem}>
+        <Grid xs={12} md={6} item className={classes.gridItem}>
           <TextField
             required
             type="text"
@@ -70,7 +93,7 @@ export default function StepInformacoesMedicamento() {
           />
         </Grid>
 
-        <Grid xs={12} md item className={classes.gridItem}>
+        <Grid xs={12} md={3} item className={classes.gridItem}>
           <TextField
             required
             type="text"
@@ -83,10 +106,8 @@ export default function StepInformacoesMedicamento() {
             value={formData.dosagem}
           />
         </Grid>
-      </Grid>
 
-      <Grid container>
-        <Grid xs={12} md item className={classes.gridItem}>
+        <Grid xs={12} md={3} item className={classes.gridItem}>
           <TextField
             required
             type="text"
@@ -99,8 +120,10 @@ export default function StepInformacoesMedicamento() {
             value={formData.formaFarmaceutica}
           />
         </Grid>
+      </Grid>
 
-        <Grid xs={12} md item className={classes.gridItem}>
+      <Grid container>
+        <Grid xs={12} md={6} item className={classes.gridItem}>
           <TextField
             required
             type="text"
@@ -113,10 +136,24 @@ export default function StepInformacoesMedicamento() {
             value={formData.fabricante}
           />
         </Grid>
+
+        <Grid xs={12} md={6} item className={classes.gridItem}>
+          <TextField
+            required
+            type="text"
+            label="Endereço do Fabricante"
+            fullWidth
+            size="small"
+            name="enderecoFabricante"
+            variant="outlined"
+            onChange={handleChange}
+            value={formData.enderecoFabricante}
+          />
+        </Grid>
       </Grid>
 
       <Grid container>
-        <Grid xs={12} md item className={classes.gridItem}>
+        <Grid xs={12} md={4} item className={classes.gridItem}>
           <TextField
             required
             type="text"
@@ -130,7 +167,7 @@ export default function StepInformacoesMedicamento() {
           />
         </Grid>
 
-        <Grid xs={12} md item className={classes.gridItem}>
+        <Grid xs={12} md={4} item className={classes.gridItem}>
           <TextField
             required
             type="date"
@@ -145,7 +182,7 @@ export default function StepInformacoesMedicamento() {
           />
         </Grid>
 
-        <Grid xs={12} md item className={classes.gridItem}>
+        <Grid xs={12} md={4} item className={classes.gridItem}>
           <TextField
             required
             type="date"
@@ -160,6 +197,68 @@ export default function StepInformacoesMedicamento() {
           />
         </Grid>
       </Grid>
+
+      <Box style={{ margin: 15 }}>
+        <Typography variant="subtitle1" style={{ marginBottom: 10 }}>
+          Tipo de Análise Solicitada
+        </Typography>
+        <FormGroup>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={formData.tiposAnalise.inspecaoFisica}
+                onChange={handleChange}
+                name="inspecaoFisica"
+              />
+            }
+            label="Inspeção Física e Visual"
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={formData.tiposAnalise.desintegracao}
+                onChange={handleChange}
+                name="desintegracao"
+              />
+            }
+            label="Desintegração"
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={formData.tiposAnalise.cromatografia}
+                onChange={handleChange}
+                name="cromatografia"
+              />
+            }
+            label="Cromatografia em Camada Fina"
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={formData.tiposAnalise.outro}
+                onChange={handleChange}
+                name="outro"
+              />
+            }
+            label="Outro"
+          />
+        </FormGroup>
+
+        {formData.tiposAnalise.outro && (
+          <TextField
+            type="text"
+            label="Especifique outro tipo de análise"
+            fullWidth
+            size="small"
+            name="outroTipoAnalise"
+            variant="outlined"
+            onChange={handleChange}
+            value={formData.outroTipoAnalise}
+            style={{ marginTop: 10 }}
+          />
+        )}
+      </Box>
     </Box>
   );
 }
