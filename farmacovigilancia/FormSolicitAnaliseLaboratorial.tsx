@@ -4,6 +4,7 @@ import NavigateNext from '@mui/icons-material/NavigateNext';
 import InformacoesSolicitante from './stepsFormularios/stepDadosRequerente';
 import InformacoesMedicamento from './stepsFormularios/stepInformacoesMedicamento';
 import InformacoesTecnologiaSaude from './stepsFormularios/stepTecnologiaSaude';
+import JustificativaConfirmacao from './stepsFormularios/stepJustificativaConfirmacao';
 import { useDispatch } from 'react-redux';
 import MessageError from '../../../messages/messageError';
 import LoadingBackdrop from '../../../load/loadingBackdrop';
@@ -15,9 +16,10 @@ export default function FormularioAnaliseLaboratorial() {
   const [open, setOpen] = useState(false);
 
   const steps = [
-    'Informações do Solicitante',
+    'Dados do Requerente',
     'Informações do Medicamento',
-    'Informações da Tecnologia de Saúde'
+    'Informações da Tecnologia de Saúde',
+    'Justificativa e Confirmação'
   ];
 
   function getStepContent(stepIndex: number) {
@@ -28,6 +30,8 @@ export default function FormularioAnaliseLaboratorial() {
         return <InformacoesMedicamento />;
       case 2:
         return <InformacoesTecnologiaSaude />;
+      case 3:
+        return <JustificativaConfirmacao />;
       default:
         return <InformacoesSolicitante />;
     }
