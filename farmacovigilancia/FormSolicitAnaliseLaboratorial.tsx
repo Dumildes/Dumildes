@@ -4,10 +4,9 @@ import NavigateNext from '@mui/icons-material/NavigateNext';
 import InformacoesSolicitante from './stepsFormularios/stepDadosRequerente';
 import InformacoesMedicamento from './stepsFormularios/stepInformacoesMedicamento';
 import InformacoesTecnologiaSaude from './stepsFormularios/stepTecnologiaSaude';
-import JustificativaConfirmacao from './stepsFormularios/stepJustificativaConfirmacao';
 import { useDispatch } from 'react-redux';
-import MessageError from '../../../messages/messageError';
-import LoadingBackdrop from '../../../load/loadingBackdrop';
+// import MessageError from '../../../messages/messageError';
+// import LoadingBackdrop from '../../../load/loadingBackdrop';
 
 export default function FormularioAnaliseLaboratorial() {
   const dispatch = useDispatch();
@@ -16,10 +15,9 @@ export default function FormularioAnaliseLaboratorial() {
   const [open, setOpen] = useState(false);
 
   const steps = [
-    'Dados do Requerente',
+    'Informações do Solicitante',
     'Informações do Medicamento',
-    'Informações da Tecnologia de Saúde',
-    'Justificativa e Confirmação'
+    'Informações da Tecnologia de Saúde'
   ];
 
   function getStepContent(stepIndex: number) {
@@ -30,8 +28,6 @@ export default function FormularioAnaliseLaboratorial() {
         return <InformacoesMedicamento />;
       case 2:
         return <InformacoesTecnologiaSaude />;
-      case 3:
-        return <JustificativaConfirmacao />;
       default:
         return <InformacoesSolicitante />;
     }
@@ -57,24 +53,25 @@ export default function FormularioAnaliseLaboratorial() {
   };
 
   return (
-    <Card style={{ marginBottom: 12 }}>
-      <LoadingBackdrop open={open} />
-      {errorMessage && <MessageError message={errorMessage} />}
+    <Container >
+      <Card style={{ marginBottom: 12 }}>
 
-      <div style={{ overflow: 'auto' }}>
-        <Stepper color="secondary" activeStep={activeStep} alternativeLabel>
-          {steps.map((label) => (
-            <Step key={label}>
-              <StepLabel style={{ color: '#85287e' }}>
-                {label}
-              </StepLabel>
-            </Step>
-          ))}
-        </Stepper>
-        <Divider />
-      </div>
+        {/* <LoadingBackdrop open={open} />
+      {errorMessage && <MessageError message={errorMessage} />} */}
 
-      <Container>
+        <div style={{ overflow: 'auto' }}>
+          <Stepper color="secondary" activeStep={activeStep} alternativeLabel>
+            {steps.map((label) => (
+              <Step key={label}>
+                <StepLabel style={{ color: '#85287e' }}>
+                  {label}
+                </StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+          <Divider />
+        </div>
+
         <Box>{getStepContent(activeStep)}</Box>
 
         <div style={{ display: 'flex', margin: '20px 10px' }}>
@@ -90,9 +87,9 @@ export default function FormularioAnaliseLaboratorial() {
           <Box style={{ display: 'flex', flexGrow: 1 }} />
 
           {activeStep === steps.length - 1 ? (
-            <Button 
-              style={{ background: '#85287e', width: 120 }} 
-              variant="contained" 
+            <Button
+              style={{ background: '#85287e', width: 120 }}
+              variant="contained"
               onClick={submitAnalise}
             >
               Enviar <NavigateNext />
@@ -107,7 +104,7 @@ export default function FormularioAnaliseLaboratorial() {
             </Button>
           )}
         </div>
-      </Container>
-    </Card>
+      </Card>
+    </Container>
   );
 }
