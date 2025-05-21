@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Card, Container, Box, Typography, Stepper, Step, StepLabel, Divider, Button } from '@mui/material';
 import NavigateNext from '@mui/icons-material/NavigateNext';
-import InformacoesSolicitante from './stepsFormularios/stepDadosRequerente';
-import InformacoesMedicamento from './stepsFormularios/stepInformacoesMedicamento';
-import InformacoesTecnologiaSaude from './stepsFormularios/stepTecnologiaSaude';
+import InformacoesSolicitante from './stepsFormulariosSolicit/stepDadosRequerente';
+import InformacoesMedicamento from './stepsFormulariosSolicit/stepInformacoesMedicamento';
+import InformacoesTecnologiaSaude from './stepsFormulariosSolicit/stepTecnologiaSaude';
+import InformacoesJustificativa from './stepsFormulariosSolicit/stepJustificativa';
 import { useDispatch } from 'react-redux';
+import HeaderSession from '../../../../utils/headerSession';
+import RegisterAccess from '../../../../utils/registerAccess';
 // import MessageError from '../../../messages/messageError';
 // import LoadingBackdrop from '../../../load/loadingBackdrop';
 
@@ -17,7 +20,8 @@ export default function FormularioAnaliseLaboratorial() {
   const steps = [
     'Informações do Solicitante',
     'Informações do Medicamento',
-    'Informações da Tecnologia de Saúde'
+    'Informações da Tecnologia de Saúde',
+    'Justificativa para a Análise',
   ];
 
   function getStepContent(stepIndex: number) {
@@ -28,6 +32,8 @@ export default function FormularioAnaliseLaboratorial() {
         return <InformacoesMedicamento />;
       case 2:
         return <InformacoesTecnologiaSaude />;
+      case 3:
+        return <InformacoesJustificativa />;
       default:
         return <InformacoesSolicitante />;
     }
@@ -53,8 +59,10 @@ export default function FormularioAnaliseLaboratorial() {
   };
 
   return (
-    <Container >
-      <Card style={{ marginBottom: 12 }}>
+    <Container style={{ marginBottom: 12 }}>
+      <RegisterAccess page={'formulario de solicitação de analise laboratotial'} />
+      <HeaderSession title='FORMULARIO DE SOLICITACAO DE ANALISE LABORATOTIAL' />
+      <Card style={{ marginBottom: 12, padding: 22 }}>
 
         {/* <LoadingBackdrop open={open} />
       {errorMessage && <MessageError message={errorMessage} />} */}
@@ -62,7 +70,7 @@ export default function FormularioAnaliseLaboratorial() {
         <div style={{ overflow: 'auto' }}>
           <Stepper color="secondary" activeStep={activeStep} alternativeLabel>
             {steps.map((label) => (
-              <Step key={label}>
+              <Step key={label} >
                 <StepLabel style={{ color: '#85287e' }}>
                   {label}
                 </StepLabel>
@@ -72,7 +80,7 @@ export default function FormularioAnaliseLaboratorial() {
           <Divider />
         </div>
 
-        <Box>{getStepContent(activeStep)}</Box>
+        <Box sx={{marginTop: 6}}>{getStepContent(activeStep)}</Box>
 
         <div style={{ display: 'flex', margin: '20px 10px' }}>
           <Button
