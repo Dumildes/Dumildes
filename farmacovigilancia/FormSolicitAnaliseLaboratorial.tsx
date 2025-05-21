@@ -1,222 +1,109 @@
 import { useState } from 'react';
 import { Card, Container, Box, Typography, Stepper, Step, StepLabel, Divider, Button } from '@mui/material';
 import NavigateNext from '@mui/icons-material/NavigateNext';
-// import InformacoesSolicitante from './stepsForm1/InformacoesSolicitante';
-// import InformacoesMedicamento from './stepsForm1/InformacoesMedicamento';
-// import InformacoesTecnologiaSaude from './stepsForm1/InformacoesTecnologiaSaude';
-// import JustificativaAnalise from './stepsForm1/JustificativaAnalise';
-// import RevisaoSolicitacao from './stepsForm1/RevisaoSolicitacao';
+import InformacoesSolicitante from './stepsFormularios/stepDadosRequerente';
+import InformacoesMedicamento from './stepsFormularios/stepInformacoesMedicamento';
+import InformacoesTecnologiaSaude from './stepsFormularios/stepTecnologiaSaude';
+import { useDispatch } from 'react-redux';
+import MessageError from '../../../messages/messageError';
+import LoadingBackdrop from '../../../load/loadingBackdrop';
 
-const FormularioAnaliseLaboratorial = () => {
+export default function FormularioAnaliseLaboratorial() {
+  const dispatch = useDispatch();
   const [activeStep, setActiveStep] = useState(0);
-  const [formData, setFormData] = useState({
-    // Informações do Solicitante
-    solicitante: {
-      nome: '',
-      dataNascimento: '',
-      genero: '',
-      numeroRegistro: '',
-      endereco: '',
-      telefone: '',
-      email: '',
-    },
-
-    // Informações do Medicamento
-    medicamento: {
-      nome: '',
-      dosagem: '',
-      formaFarmaceutica: '',
-      fabricante: '',
-      enderecoFabricante: '',
-      lote: '',
-      dataFabrico: '',
-      dataValidade: '',
-      tipoAnalise: [],
-      outroTipoAnalise: '',
-    },
-
-    // Informações da Tecnologia de Saúde
-    tecnologiaSaude: {
-      nome: '',
-      fabricante: '',
-      enderecoFabricante: '',
-      lote: '',
-      dataFabrico: '',
-      dataValidade: '',
-      tipoAnalise: [], // Por padrão será 'Validação'
-    },
-
-    // Justificativa
-    justificativa: '',
-    
-    // Tipo de Produto a Analisar
-    tipoProduto: 'medicamento', // 'medicamento' ou 'tecnologiaSaude'
-    
-    // Data da solicitação
-    dataSolicitacao: new Date().toISOString().split('T')[0],
-  });
+  const [errorMessage, setErrorMessage] = useState('');
+  const [open, setOpen] = useState(false);
 
   const steps = [
     'Informações do Solicitante',
-    'Detalhes do Produto',
-    'Tipo de Análise e Justificativa',
-    'Revisão da Solicitação',
+    'Informações do Medicamento',
+    'Informações da Tecnologia de Saúde'
   ];
 
-  // const handleUpdateFormData = (section, data) => {
-  //   setFormData((prevData) => ({
-  //     ...prevData,
-  //     [section]: { ...prevData[section], ...data },
-  //   }));
-  // };
-
-  // const handleUpdateTipoProduto = (tipo) => {
-  //   setFormData((prevData) => ({
-  //     ...prevData,
-  //     tipoProduto: tipo,
-  //   }));
-  // };
-
-  // const handleUpdateJustificativa = (justificativa) => {
-  //   setFormData((prevData) => ({
-  //     ...prevData,
-  //     justificativa,
-  //   }));
-  // };
-
-  const handleNext = () => {
-    setActiveStep((prevStep) => prevStep + 1);
-  };
+  function getStepContent(stepIndex) {
+    switch (stepIndex) {
+      case 0:
+        return <InformacoesSolicitante />;
+      case 1:
+        return <InformacoesMedicamento />;
+      case 2:
+        return <InformacoesTecnologiaSaude />;
+      default:
+        return <InformacoesSolicitante />;
+    }
+  }
 
   const handleBack = () => {
-    setActiveStep((prevStep) => prevStep - 1);
+    setActiveStep((prevActiveStep) => prevActiveStep - 1);
   };
 
-  const handleSubmit = async () => {
-    // Aqui você implementará a integração com a API posteriormente
-    console.log('Dados do formulário prontos para envio:', formData);
-    
-    // Simulando sucesso de envio
-    alert('Solicitação enviada com sucesso!');
-    
-    // Opcionalmente, redirecionar ou limpar o formulário
-    setActiveStep(0);
-    // Reset form data if needed
-    // setFormData({...});
+  const handleNext = () => {
+    setActiveStep((prevActiveStep) => prevActiveStep + 1);
   };
 
-  // Renderiza o passo atual do formulário
-  // const getStepContent = (step) => {
-  //   switch (step) {
-  //     case 0:
-  //       return (
-  //         <InformacoesSolicitante 
-  //           solicitanteData={formData.solicitante} 
-  //           onUpdateData={(data) => handleUpdateFormData('solicitante', data)} 
-  //         />
-  //       );
-  //     case 1:
-  //       return formData.tipoProduto === 'medicamento' ? (
-  //         <InformacoesMedicamento 
-  //           medicamentoData={formData.medicamento}
-  //           onUpdateData={(data) => handleUpdateFormData('medicamento', data)}
-  //           onChangeTipoProduto={handleUpdateTipoProduto}
-  //         />
-  //       ) : (
-  //         <InformacoesTecnologiaSaude 
-  //           tecnologiaData={formData.tecnologiaSaude}
-  //           onUpdateData={(data) => handleUpdateFormData('tecnologiaSaude', data)}
-  //           onChangeTipoProduto={handleUpdateTipoProduto}
-  //         />
-  //       );
-  //     case 2:
-  //       return (
-  //         <JustificativaAnalise 
-  //           justificativa={formData.justificativa}
-  //           onUpdateJustificativa={handleUpdateJustificativa}
-  //           tipoProduto={formData.tipoProduto}
-  //           tipoAnalise={
-  //             formData.tipoProduto === 'medicamento'
-  //               ? formData.medicamento.tipoAnalise
-  //               : formData.tecnologiaSaude.tipoAnalise
-  //           }
-  //           onUpdateTipoAnalise={(tipoAnalise) => 
-  //             handleUpdateFormData(
-  //               formData.tipoProduto === 'medicamento' ? 'medicamento' : 'tecnologiaSaude', 
-  //               { tipoAnalise }
-  //             )
-  //           }
-  //           outroTipoAnalise={formData.medicamento.outroTipoAnalise}
-  //           onUpdateOutroTipoAnalise={(outroTipoAnalise) => 
-  //             handleUpdateFormData('medicamento', { outroTipoAnalise })
-  //           }
-  //         />
-  //       );
-  //     case 3:
-  //       return (
-  //         <RevisaoSolicitacao 
-  //           formData={formData} 
-  //         />
-  //       );
-  //     default:
-  //       return 'Passo desconhecido';
-  //   }
-  // };
+  const submitAnalise = async () => {
+    setOpen(true);
+    try {
+      // Implementar lógica de submissão
+      setOpen(false);
+    } catch (error) {
+      setErrorMessage(error.message);
+      setOpen(false);
+    }
+  };
 
   return (
     <Card style={{ marginBottom: 12 }}>
+      <LoadingBackdrop open={open} />
+      {errorMessage && <MessageError message={errorMessage} />}
+
+      <div style={{ overflow: 'auto' }}>
+        <Stepper color="secondary" activeStep={activeStep} alternativeLabel>
+          {steps.map((label) => (
+            <Step key={label}>
+              <StepLabel style={{ color: '#85287e' }}>
+                {label}
+              </StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+        <Divider />
+      </div>
+
       <Container>
-        <Box my={4}>
-          <Typography variant="h4" align="center" style={{ marginBottom: 24 }}>
-            Formulário de Solicitação de Análise Laboratorial de
-            Medicamentos e Tecnologias de Saúde
-          </Typography>
+        <Box>{getStepContent(activeStep)}</Box>
 
-          <Stepper activeStep={activeStep} alternativeLabel>
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
-          <Divider style={{ marginTop: 20, marginBottom: 20 }} />
+        <div style={{ display: 'flex', margin: '20px 10px' }}>
+          <Button
+            style={{ background: '#ebebf4' }}
+            variant="outlined"
+            disabled={activeStep === 0}
+            onClick={handleBack}
+          >
+            Voltar
+          </Button>
 
-          {/* <Box my={4}>{getStepContent(activeStep)}</Box> */}
+          <Box style={{ display: 'flex', flexGrow: 1 }} />
 
-          <Box display="flex" justifyContent="space-between" mt={4} mb={2}>
-            <Button
-              variant="outlined"
-              color="primary"
-              disabled={activeStep === 0}
-              onClick={handleBack}
+          {activeStep === steps.length - 1 ? (
+            <Button 
+              style={{ background: '#85287e', width: 120 }} 
+              variant="contained" 
+              onClick={submitAnalise}
             >
-              Voltar
+              Enviar <NavigateNext />
             </Button>
-            
-            {activeStep === steps.length - 1 ? (
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleSubmit}
-                style={{ background: '#85287e' }}
-              >
-                Enviar Solicitação
-              </Button>
-            ) : (
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleNext}
-                style={{ background: '#85287e' }}
-              >
-                Próximo <NavigateNext />
-              </Button>
-            )}
-          </Box>
-        </Box>
+          ) : (
+            <Button
+              style={{ background: '#85287e', width: 120 }}
+              variant="contained"
+              onClick={handleNext}
+            >
+              Próximo <NavigateNext />
+            </Button>
+          )}
+        </div>
       </Container>
     </Card>
   );
-};
-
-export default FormularioAnaliseLaboratorial;
+}
