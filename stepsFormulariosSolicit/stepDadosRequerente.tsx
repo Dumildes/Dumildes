@@ -7,6 +7,10 @@ const useStyles = makeStyles({
   gridItem: { margin: 8 }
 });
 
+export interface StepDadosRequerenteProps {
+  tipoSolicitante: string;
+}
+
 interface FormData {
   nome: string;
   dataNascimento: string;
@@ -15,7 +19,6 @@ interface FormData {
   endereco: string;
   telefone: string;
   email: string;
-  // Campos específicos para cada tipo
   nif?: string;
   licencaComercial?: string;
   alvara?: string;
@@ -23,11 +26,7 @@ interface FormData {
   nomeRepresentante?: string;
 }
 
-interface Props {
-  tipoSolicitante: string;
-}
-
-export default function StepDadosRequerente({ tipoSolicitante }: Props) {
+const StepDadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }) => {
   const classes = useStyles();
   const dispatch = useDispatch();
   const [formData, setFormData] = useState<FormData>({
@@ -262,4 +261,6 @@ export default function StepDadosRequerente({ tipoSolicitante }: Props) {
       </Grid>
     </Box>
   );
-}
+};
+
+export default StepDadosRequerente;
