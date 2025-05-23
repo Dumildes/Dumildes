@@ -5,8 +5,6 @@ import InformacoesSolicitante from './stepsFormulariosSolicit/stepDadosRequerent
 import InformacoesMedicamento from './stepsFormulariosSolicit/stepInformacoesMedicamento';
 import InformacoesJustificativa from './stepsFormulariosSolicit/stepJustificativa';
 import { useDispatch } from 'react-redux';
-import HeaderSession from '../../../../utils/headerSession';
-import RegisterAccess from '../../../../utils/registerAccess';
 
 export default function FormularioAnaliseLaboratorial() {
   const dispatch = useDispatch();
@@ -177,8 +175,9 @@ export default function FormularioAnaliseLaboratorial() {
 
   return (
     <Container style={{ marginBottom: 12, minHeight: "70vh" }}>
-      <RegisterAccess page={'solicitação de analise laboratotial'} />
-      <HeaderSession title='SOLICITAÇÃO DE ANÁLISE LABORATORIAL' />
+      <Typography variant="h4" style={{ marginBottom: 20, color: '#85287e' }}>
+        SOLICITAÇÃO DE ANÁLISE LABORATORIAL
+      </Typography>
       <Card style={{ marginBottom: 12, padding: 22 }}>
         {activeStep === -2 ? (
           renderSelecaoDirecao()
