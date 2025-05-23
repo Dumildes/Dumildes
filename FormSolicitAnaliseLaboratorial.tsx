@@ -10,10 +10,11 @@ import RegisterAccess from '../../../../utils/registerAccess';
 
 export default function FormularioAnaliseLaboratorial() {
   const dispatch = useDispatch();
-  const [activeStep, setActiveStep] = useState(-1); // Começa em -1 para mostrar a seleção inicial
+  const [activeStep, setActiveStep] = useState(-2); // -2 para seleção de direção, -1 para tipo de solicitante
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [open, setOpen] = useState(false);
   const [tipoSolicitante, setTipoSolicitante] = useState('');
+  const [direcao, setDirecao] = useState('');
 
   const steps = [
     'Informações do Solicitante',
@@ -36,8 +37,11 @@ export default function FormularioAnaliseLaboratorial() {
 
   const handleBack = () => {
     if (activeStep === 0) {
-      setActiveStep(-1); // Volta para a seleção inicial
+      setActiveStep(-1); // Volta para a seleção de tipo de solicitante
       setTipoSolicitante('');
+    } else if (activeStep === -1) {
+      setActiveStep(-2); // Volta para a seleção de direção
+      setDirecao('');
     } else {
       setActiveStep((prevActiveStep) => prevActiveStep - 1);
     }
@@ -47,8 +51,18 @@ export default function FormularioAnaliseLaboratorial() {
     setActiveStep((prevActiveStep) => prevActiveStep + 1);
   };
 
+  const handleDirecaoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setDirecao(event.target.value);
+  };
+
   const handleTipoSolicitanteChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setTipoSolicitante(event.target.value);
+  };
+
+  const continuarParaTipoSolicitante = () => {
+    if (direcao) {
+      setActiveStep(-1);
+    }
   };
 
   const iniciarFormulario = () => {
@@ -68,56 +82,108 @@ export default function FormularioAnaliseLaboratorial() {
     }
   };
 
+  const renderSelecaoDirecao = () => (
+    <Box>
+      <Typography variant="h6" align="center" style={{ marginBottom: 40 }}>
+        SELECIONAR DIRECÇÃO
+      </Typography>
+      <Box style={{ display: 'flex', justifyContent: 'center', gap: 20 }}>
+        <Paper 
+          style={{ 
+            padding: 20, 
+            width: 200, 
+            cursor: 'pointer',
+            border: direcao === 'OFA' ? '2px solid #85287e' : '1px solid #e0e0e0'
+          }}
+          onClick={() => setDirecao('OFA')}
+        >
+          <Typography variant="h5" align="center" style={{ color: '#85287e' }}>
+            OFA
+          </Typography>
+        </Paper>
+        <Paper 
+          style={{ 
+            padding: 20, 
+            width: 200, 
+            cursor: 'pointer',
+            border: direcao === 'CAPFA' ? '2px solid #85287e' : '1px solid #e0e0e0'
+          }}
+          onClick={() => setDirecao('CAPFA')}
+        >
+          <Typography variant="h5" align="center" style={{ color: '#85287e' }}>
+            CAPFA
+          </Typography>
+        </Paper>
+      </Box>
+      <Box style={{ display: 'flex', justifyContent: 'center', marginTop: 30 }}>
+        <Button
+          style={{ background: '#85287e', width: 120 }}
+          variant="contained"
+          onClick={continuarParaTipoSolicitante}
+          disabled={!direcao}
+        >
+          Continuar <NavigateNext />
+        </Button>
+      </Box>
+    </Box>
+  );
+
+  const renderSelecaoTipoSolicitante = () => (
+    <Box>
+      <Typography variant="h6" style={{ marginBottom: 20 }}>
+        Selecione o tipo de solicitante:
+      </Typography>
+      <Paper style={{ padding: 20, maxWidth: 400, margin: '0 auto' }}>
+        <FormControl component="fieldset">
+          <RadioGroup
+            value={tipoSolicitante}
+            onChange={handleTipoSolicitanteChange}
+          >
+            <FormControlLabel 
+              value="distribuidor" 
+              control={<Radio />} 
+              label="Distribuidor" 
+            />
+            <FormControlLabel 
+              value="importador" 
+              control={<Radio />} 
+              label="Importador" 
+            />
+            <FormControlLabel 
+              value="pessoaSingular" 
+              control={<Radio />} 
+              label="Pessoa Singular" 
+            />
+            <FormControlLabel 
+              value="pessoaColetiva" 
+              control={<Radio />} 
+              label="Pessoa Coletiva" 
+            />
+          </RadioGroup>
+        </FormControl>
+        <Box style={{ marginTop: 20, textAlign: 'right' }}>
+          <Button
+            style={{ background: '#85287e', width: 120 }}
+            variant="contained"
+            onClick={iniciarFormulario}
+            disabled={!tipoSolicitante}
+          >
+            Continuar <NavigateNext />
+          </Button>
+        </Box>
+      </Paper>
+    </Box>
+  );
+
   return (
     <Container style={{ marginBottom: 12, minHeight: "70vh" }}>
       <RegisterAccess page={'solicitação de analise laboratotial'} />
       <HeaderSession title='SOLICITAÇÃO DE ANÁLISE LABORATORIAL' />
       <Card style={{ marginBottom: 12, padding: 22 }}>
-        {activeStep === -1 ? (
-          <Box>
-            <Typography variant="h6" style={{ marginBottom: 20 }}>
-              Selecione o tipo de solicitante:
-            </Typography>
-            <Paper style={{ padding: 20, maxWidth: 400, margin: '0 auto' }}>
-              <FormControl component="fieldset">
-                <RadioGroup
-                  value={tipoSolicitante}
-                  onChange={handleTipoSolicitanteChange}
-                >
-                  <FormControlLabel 
-                    value="distribuidor" 
-                    control={<Radio />} 
-                    label="Distribuidor" 
-                  />
-                  <FormControlLabel 
-                    value="importador" 
-                    control={<Radio />} 
-                    label="Importador" 
-                  />
-                  <FormControlLabel 
-                    value="pessoaSingular" 
-                    control={<Radio />} 
-                    label="Pessoa Singular" 
-                  />
-                  <FormControlLabel 
-                    value="pessoaColetiva" 
-                    control={<Radio />} 
-                    label="Pessoa Coletiva" 
-                  />
-                </RadioGroup>
-              </FormControl>
-              <Box style={{ marginTop: 20, textAlign: 'right' }}>
-                <Button
-                  style={{ background: '#85287e', width: 120 }}
-                  variant="contained"
-                  onClick={iniciarFormulario}
-                  disabled={!tipoSolicitante}
-                >
-                  Continuar <NavigateNext />
-                </Button>
-              </Box>
-            </Paper>
-          </Box>
+        {activeStep === -2 ? (
+          renderSelecaoDirecao()
+        ) : activeStep === -1 ? (
+          renderSelecaoTipoSolicitante()
         ) : (
           <>
             <div style={{ overflow: 'auto' }}>
