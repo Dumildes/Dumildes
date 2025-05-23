@@ -4,6 +4,7 @@ import NavigateNext from '@mui/icons-material/NavigateNext';
 import InformacoesSolicitante from './stepsFormulariosSolicit/stepDadosRequerente';
 import InformacoesMedicamento from './stepsFormulariosSolicit/stepInformacoesMedicamento';
 import InformacoesJustificativa from './stepsFormulariosSolicit/stepJustificativa';
+import StepDocumentos from './stepsFormulariosSolicit/stepDocumentos';
 import { useDispatch } from 'react-redux';
 import HeaderSession from '../../../../utils/headerSession';
 import RegisterAccess from '../../../../utils/registerAccess';
@@ -19,6 +20,7 @@ export default function FormularioAnaliseLaboratorial() {
     'Informações do Solicitante',
     'Informações do Produto',
     'Justificativa para a Análise',
+    'Anexar Documentos'
   ];
 
   function getStepContent(stepIndex: number) {
@@ -29,6 +31,8 @@ export default function FormularioAnaliseLaboratorial() {
         return <InformacoesMedicamento />;
       case 2:
         return <InformacoesJustificativa />;
+      case 3:
+        return <StepDocumentos />;
       default:
         return null;
     }
@@ -61,10 +65,26 @@ export default function FormularioAnaliseLaboratorial() {
     setOpen(true);
     try {
       // Implementar lógica de submissão
+      console.log('Enviando formulário com documentos anexados...');
       setOpen(false);
     } catch (error: any) {
       setErrorMessage(error?.message || 'Erro ao processar solicitação');
       setOpen(false);
+    }
+  };
+
+  const getStepButtonText = () => {
+    switch (activeStep) {
+      case 0:
+        return 'Próximo';
+      case 1:
+        return 'Próximo';
+      case 2:
+        return 'Anexar Documentos';
+      case 3:
+        return 'Enviar Solicitação';
+      default:
+        return 'Próximo';
     }
   };
 
@@ -148,19 +168,19 @@ export default function FormularioAnaliseLaboratorial() {
 
               {activeStep === steps.length - 1 ? (
                 <Button
-                  style={{ background: '#85287e', width: 120 }}
+                  style={{ background: '#85287e', width: 160 }}
                   variant="contained"
                   onClick={submitAnalise}
                 >
-                  Enviar <NavigateNext />
+                  {getStepButtonText()} <NavigateNext />
                 </Button>
               ) : (
                 <Button
-                  style={{ background: '#85287e', width: 120 }}
+                  style={{ background: '#85287e', width: 160 }}
                   variant="contained"
                   onClick={handleNext}
                 >
-                  Próximo <NavigateNext />
+                  {getStepButtonText()} <NavigateNext />
                 </Button>
               )}
             </div>
