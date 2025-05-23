@@ -5,6 +5,7 @@ import { useState, useEffect, ChangeEvent } from 'react';
 import SearchIcon from '@material-ui/icons/Search';
 import BusinessIcon from '@material-ui/icons/Business';
 import CheckIcon from '@material-ui/icons/Check';
+import api from '../../../../../services/api';
 
 const useStyles = makeStyles({
   gridItem: { margin: 8 },
@@ -68,12 +69,35 @@ interface FormData {
 }
 
 interface Estabelecimento {
-  id: string;
+  _id: string;
   nome: string;
-  endereco: string;
-  nif: string;
-  tipo: string;
-  licenca?: string;
+  provincia: string;
+  municipio: string;
+  bairro: string;
+  rua: string;
+  numeroProcesso: string;
+  numeroEntrada: number;
+  status: string;
+  tipo: string | null;
+  approved: boolean;
+  empresa: {
+    _id: string;
+    nome: string;
+    nif: string;
+    tel1: string;
+    provincia: string;
+    municipio: string;
+    bairro: string;
+    rua: string;
+    representante: string;
+  };
+  directorTecnico?: {
+    dadosPessoais: {
+      nome: string;
+      email: string;
+      tel1: string;
+    };
+  };
 }
 
 const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }) => {
@@ -93,42 +117,7 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
   const [estabelecimentos, setEstabelecimentos] = useState<Estabelecimento[]>([]);
   const [estabelecimentoSelecionado, setEstabelecimentoSelecionado] = useState<Estabelecimento | null>(null);
   const [buscandoEstabelecimentos, setBuscandoEstabelecimentos] = useState(false);
-
-  // Dados mock para demonstração - em produção, viria de uma API
-  const estabelecimentosMock: Estabelecimento[] = [
-    {
-      id: '1',
-      nome: 'Farmácia Central Lda',
-      endereco: 'Rua da Liberdade, 123, Luanda',
-      nif: '5401234567',
-      tipo: 'distribuidor',
-      licenca: 'LC001234'
-    },
-    {
-      id: '2',
-      nome: 'MedImport Angola',
-      endereco: 'Av. 4 de Fevereiro, 456, Luanda',
-      nif: '5407654321',
-      tipo: 'importador',
-      licenca: 'IM005678'
-    },
-    {
-      id: '3',
-      nome: 'Distribuidora Saúde Plus',
-      endereco: 'Rua Comandante Che Guevara, 789, Luanda',
-      nif: '5409876543',
-      tipo: 'distribuidor',
-      licenca: 'LC009876'
-    },
-    {
-      id: '4',
-      nome: 'Pharma Solutions Lda',
-      endereco: 'Rua Major Kanhangulo, 321, Luanda',
-      nif: '5403456789',
-      tipo: 'importador',
-      licenca: 'IM003456'
-    }
-  ];
+  const [erroApi, setErroApi] = useState<string>('');
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -145,38 +134,67 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
     if (!pesquisaEstabelecimento.trim()) return;
 
     setBuscandoEstabelecimentos(true);
+    setErroApi('');
     
-    // Simular delay de API
-    setTimeout(() => {
-      const resultados = estabelecimentosMock.filter(est => 
-        est.nome.toLowerCase().includes(pesquisaEstabelecimento.toLowerCase()) ||
-        est.nif.includes(pesquisaEstabelecimento) ||
-        (tipoSolicitante !== 'pessoaSingular' && est.tipo === tipoSolicitante)
-      );
+    try {
+      const response = await api.get('/estabelecimentos');
       
-      setEstabelecimentos(resultados);
+      if (response.data && Array.isArray(response.data)) {
+        console.log("daods:", response)
+        // Filtrar estabelecimentos baseado na pesquisa
+        const resultados = response.data.filter((est: Estabelecimento) => {
+          const termoPesquisa = pesquisaEstabelecimento.toLowerCase();
+          return (
+            est.nome.toLowerCase().includes(termoPesquisa) ||
+            est.empresa.nome.toLowerCase().includes(termoPesquisa) ||
+            est.empresa.nif.includes(pesquisaEstabelecimento) ||
+            est.numeroProcesso.toLowerCase().includes(termoPesquisa)
+          ) && est.approved && est.status === 'Activo'; // Apenas estabelecimentos aprovados e ativos
+        });
+        
+        setEstabelecimentos(resultados);
+        console.log("daods:", resultados)
+        
+        if (resultados.length === 0) {
+          setErroApi('Nenhum estabelecimento encontrado com os critérios de pesquisa.');
+        }
+      } else {
+        setErroApi('Formato de resposta inválido da API.');
+      }
+    } catch (error: any) {
+      console.error('Erro ao buscar estabelecimentos:', error);
+      setErroApi(error.response?.data?.message || 'Erro ao buscar estabelecimentos. Tente novamente.');
+      setEstabelecimentos([]);
+    } finally {
       setBuscandoEstabelecimentos(false);
-    }, 1000);
+    }
   };
 
   const selecionarEstabelecimento = (estabelecimento: Estabelecimento) => {
     setEstabelecimentoSelecionado(estabelecimento);
     
-    // Preencher automaticamente os campos do formulário
+    // Construir endereço completo
+    const enderecoCompleto = `${estabelecimento.empresa.rua}, ${estabelecimento.empresa.bairro}, ${estabelecimento.empresa.municipio}, ${estabelecimento.empresa.provincia}`;
+    
+    // Preencher automaticamente os campos do formulário com dados da empresa
     setFormData(prev => ({
       ...prev,
-      nome: estabelecimento.nome,
-      endereco: estabelecimento.endereco,
-      nif: estabelecimento.nif,
-      licencaComercial: estabelecimento.licenca || '',
-      alvara: estabelecimento.licenca || '',
-      estabelecimentoId: estabelecimento.id,
+      nome: estabelecimento.empresa.nome,
+      endereco: enderecoCompleto,
+      nif: estabelecimento.empresa.nif,
+      telefone: estabelecimento.empresa.tel1 || '',
+      email: estabelecimento.directorTecnico?.dadosPessoais?.email || '',
+      licencaComercial: estabelecimento.numeroProcesso || '',
+      alvara: estabelecimento.numeroProcesso || '',
+      registroComercial: estabelecimento.numeroProcesso || '',
+      estabelecimentoId: estabelecimento._id,
       estabelecimentoNome: estabelecimento.nome
     }));
 
     // Limpar a pesquisa
     setPesquisaEstabelecimento('');
     setEstabelecimentos([]);
+    setErroApi('');
   };
 
   const limparSelecao = () => {
@@ -186,8 +204,11 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
       nome: '',
       endereco: '',
       nif: '',
+      telefone: '',
+      email: '',
       licencaComercial: '',
       alvara: '',
+      registroComercial: '',
       estabelecimentoId: '',
       estabelecimentoNome: ''
     }));
@@ -226,7 +247,7 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
               <TextField
                 required
                 type="text"
-                label="Licença Comercial"
+                label="Licença Comercial / Número do Processo"
                 fullWidth
                 size="small"
                 name="licencaComercial"
@@ -260,7 +281,7 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
               <TextField
                 required
                 type="text"
-                label="Alvará"
+                label="Alvará / Número do Processo"
                 fullWidth
                 size="small"
                 name="alvara"
@@ -352,7 +373,14 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
                   <CheckIcon style={{ color: '#4caf50', marginRight: 8 }} />
                   <ListItemText
                     primary={estabelecimentoSelecionado.nome}
-                    secondary={`${estabelecimentoSelecionado.endereco} • NIF: ${estabelecimentoSelecionado.nif}`}
+                    secondary={
+                      <div>
+                        <div><strong>Empresa:</strong> {estabelecimentoSelecionado.empresa.nome}</div>
+                        <div><strong>NIF:</strong> {estabelecimentoSelecionado.empresa.nif}</div>
+                        <div><strong>Localização:</strong> {estabelecimentoSelecionado.empresa.municipio}, {estabelecimentoSelecionado.empresa.provincia}</div>
+                        <div><strong>Processo:</strong> {estabelecimentoSelecionado.numeroProcesso}</div>
+                      </div>
+                    }
                   />
                   <ListItemSecondaryAction>
                     <Button
@@ -370,7 +398,7 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
             <Box>
               <Box style={{ display: 'flex', alignItems: 'center' }}>
                 <TextField
-                  placeholder="Digite o nome do estabelecimento ou NIF..."
+                  placeholder="Digite o nome do estabelecimento, empresa ou NIF..."
                   fullWidth
                   size="small"
                   variant="outlined"
@@ -389,18 +417,32 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
                 </Button>
               </Box>
 
+              {erroApi && (
+                <Typography variant="body2" color="error" style={{ marginTop: 8 }}>
+                  {erroApi}
+                </Typography>
+              )}
+
               {estabelecimentos.length > 0 && (
                 <Box className={classes.estabelecimentosList}>
                   <Typography variant="body2" style={{ margin: '8px 0', fontWeight: 500 }}>
-                    Resultados encontrados:
+                    Resultados encontrados ({estabelecimentos.length}):
                   </Typography>
                   {estabelecimentos.map((estabelecimento) => (
-                    <Paper key={estabelecimento.id} className={classes.estabelecimentoItem}>
+                    <Paper key={estabelecimento._id} className={classes.estabelecimentoItem}>
                       <ListItem button onClick={() => selecionarEstabelecimento(estabelecimento)}>
                         <BusinessIcon style={{ marginRight: 8, color: '#85287e' }} />
                         <ListItemText
                           primary={estabelecimento.nome}
-                          secondary={`${estabelecimento.endereco} • NIF: ${estabelecimento.nif} • Tipo: ${estabelecimento.tipo}`}
+                          secondary={
+                            <div>
+                              <div><strong>Empresa:</strong> {estabelecimento.empresa.nome}</div>
+                              <div><strong>NIF:</strong> {estabelecimento.empresa.nif}</div>
+                              <div><strong>Localização:</strong> {estabelecimento.empresa.municipio}, {estabelecimento.empresa.provincia}</div>
+                              <div><strong>Processo:</strong> {estabelecimento.numeroProcesso}</div>
+                              <div><strong>Status:</strong> {estabelecimento.status}</div>
+                            </div>
+                          }
                         />
                       </ListItem>
                     </Paper>
