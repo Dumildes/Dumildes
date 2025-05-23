@@ -1,21 +1,19 @@
 import { useState } from 'react';
-import { Card, Container, Box, Typography, Stepper, Step, StepLabel, Divider, Button } from '@mui/material';
+import { Card, Container, Box, Typography, Stepper, Step, StepLabel, Divider, Button, Paper, Radio, RadioGroup, FormControlLabel, FormControl } from '@mui/material';
 import NavigateNext from '@mui/icons-material/NavigateNext';
 import InformacoesSolicitante from './stepsFormulariosSolicit/stepDadosRequerente';
 import InformacoesMedicamento from './stepsFormulariosSolicit/stepInformacoesMedicamento';
-// import InformacoesTecnologiaSaude from './stepsFormulariosSolicit/stepTecnologiaSaude';
 import InformacoesJustificativa from './stepsFormulariosSolicit/stepJustificativa';
 import { useDispatch } from 'react-redux';
 import HeaderSession from '../../../../utils/headerSession';
 import RegisterAccess from '../../../../utils/registerAccess';
-// import MessageError from '../../../messages/messageError';
-// import LoadingBackdrop from '../../../load/loadingBackdrop';
 
 export default function FormularioAnaliseLaboratorial() {
   const dispatch = useDispatch();
-  const [activeStep, setActiveStep] = useState(0);
+  const [activeStep, setActiveStep] = useState(-1); // Começa em -1 para mostrar a seleção inicial
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [open, setOpen] = useState(false);
+  const [tipoSolicitante, setTipoSolicitante] = useState('');
 
   const steps = [
     'Informações do Solicitante',
@@ -26,22 +24,37 @@ export default function FormularioAnaliseLaboratorial() {
   function getStepContent(stepIndex: number) {
     switch (stepIndex) { 
       case 0:
-        return <InformacoesSolicitante />;
+        return <InformacoesSolicitante tipoSolicitante={tipoSolicitante} />;
       case 1:
         return <InformacoesMedicamento />;
       case 2:
         return <InformacoesJustificativa />;
       default:
-        return <InformacoesSolicitante />;
+        return null;
     }
   }
 
   const handleBack = () => {
-    setActiveStep((prevActiveStep) => prevActiveStep - 1);
+    if (activeStep === 0) {
+      setActiveStep(-1); // Volta para a seleção inicial
+      setTipoSolicitante('');
+    } else {
+      setActiveStep((prevActiveStep) => prevActiveStep - 1);
+    }
   };
 
   const handleNext = () => {
     setActiveStep((prevActiveStep) => prevActiveStep + 1);
+  };
+
+  const handleTipoSolicitanteChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setTipoSolicitante(event.target.value);
+  };
+
+  const iniciarFormulario = () => {
+    if (tipoSolicitante) {
+      setActiveStep(0);
+    }
   };
 
   const submitAnalise = async () => {
@@ -60,55 +73,99 @@ export default function FormularioAnaliseLaboratorial() {
       <RegisterAccess page={'solicitação de analise laboratotial'} />
       <HeaderSession title='SOLICITAÇÃO DE ANÁLISE LABORATORIAL' />
       <Card style={{ marginBottom: 12, padding: 22 }}>
+        {activeStep === -1 ? (
+          <Box>
+            <Typography variant="h6" style={{ marginBottom: 20 }}>
+              Selecione o tipo de solicitante:
+            </Typography>
+            <Paper style={{ padding: 20, maxWidth: 400, margin: '0 auto' }}>
+              <FormControl component="fieldset">
+                <RadioGroup
+                  value={tipoSolicitante}
+                  onChange={handleTipoSolicitanteChange}
+                >
+                  <FormControlLabel 
+                    value="distribuidor" 
+                    control={<Radio />} 
+                    label="Distribuidor" 
+                  />
+                  <FormControlLabel 
+                    value="importador" 
+                    control={<Radio />} 
+                    label="Importador" 
+                  />
+                  <FormControlLabel 
+                    value="pessoaSingular" 
+                    control={<Radio />} 
+                    label="Pessoa Singular" 
+                  />
+                  <FormControlLabel 
+                    value="pessoaColetiva" 
+                    control={<Radio />} 
+                    label="Pessoa Coletiva" 
+                  />
+                </RadioGroup>
+              </FormControl>
+              <Box style={{ marginTop: 20, textAlign: 'right' }}>
+                <Button
+                  style={{ background: '#85287e', width: 120 }}
+                  variant="contained"
+                  onClick={iniciarFormulario}
+                  disabled={!tipoSolicitante}
+                >
+                  Continuar <NavigateNext />
+                </Button>
+              </Box>
+            </Paper>
+          </Box>
+        ) : (
+          <>
+            <div style={{ overflow: 'auto' }}>
+              <Stepper color="secondary" activeStep={activeStep} alternativeLabel>
+                {steps.map((label) => (
+                  <Step key={label}>
+                    <StepLabel style={{ color: '#85287e' }}>
+                      {label}
+                    </StepLabel>
+                  </Step>
+                ))}
+              </Stepper>
+              <Divider />
+            </div>
 
-        {/* <LoadingBackdrop open={open} />
-      {errorMessage && <MessageError message={errorMessage} />} */}
+            <Box sx={{marginTop: 6}}>{getStepContent(activeStep)}</Box>
 
-        <div style={{ overflow: 'auto' }}>
-          <Stepper color="secondary" activeStep={activeStep} alternativeLabel>
-            {steps.map((label) => (
-              <Step key={label} >
-                <StepLabel style={{ color: '#85287e' }}>
-                  {label}
-                </StepLabel>
-              </Step>
-            ))}
-          </Stepper>
-          <Divider />
-        </div>
+            <div style={{ display: 'flex', margin: '20px 10px' }}>
+              <Button
+                style={{ background: '#ebebf4' }}
+                variant="outlined"
+                onClick={handleBack}
+              >
+                Voltar
+              </Button>
 
-        <Box sx={{marginTop: 6}}>{getStepContent(activeStep)}</Box>
+              <Box style={{ display: 'flex', flexGrow: 1 }} />
 
-        <div style={{ display: 'flex', margin: '20px 10px' }}>
-          <Button
-            style={{ background: '#ebebf4' }}
-            variant="outlined"
-            disabled={activeStep === 0}
-            onClick={handleBack}
-          >
-            Voltar
-          </Button>
-
-          <Box style={{ display: 'flex', flexGrow: 1 }} />
-
-          {activeStep === steps.length - 1 ? (
-            <Button
-              style={{ background: '#85287e', width: 120 }}
-              variant="contained"
-              onClick={submitAnalise}
-            >
-              Enviar <NavigateNext />
-            </Button>
-          ) : (
-            <Button
-              style={{ background: '#85287e', width: 120 }}
-              variant="contained"
-              onClick={handleNext}
-            >
-              Próximo <NavigateNext />
-            </Button>
-          )}
-        </div>
+              {activeStep === steps.length - 1 ? (
+                <Button
+                  style={{ background: '#85287e', width: 120 }}
+                  variant="contained"
+                  onClick={submitAnalise}
+                >
+                  Enviar <NavigateNext />
+                </Button>
+              ) : (
+                <Button
+                  style={{ background: '#85287e', width: 120 }}
+                  variant="contained"
+                  onClick={handleNext}
+                >
+                  Próximo <NavigateNext />
+                </Button>
+              )}
+            </div>
+          </>
+        )}
       </Card>
     </Container>
   );
