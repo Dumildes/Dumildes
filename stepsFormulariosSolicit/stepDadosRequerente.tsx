@@ -1,5 +1,4 @@
-import { Box, Grid, Typography } from "@material-ui/core";
-import TextField from '@material-ui/core/TextField';
+import { Box, Grid, Typography, TextField } from "@material-ui/core";
 import { makeStyles } from '@material-ui/core/styles';
 import { useDispatch } from 'react-redux';
 import { useState, useEffect, ChangeEvent } from 'react';
@@ -7,6 +6,10 @@ import { useState, useEffect, ChangeEvent } from 'react';
 const useStyles = makeStyles({
   gridItem: { margin: 8 }
 });
+
+export interface StepDadosRequerenteProps {
+  tipoSolicitante: string;
+}
 
 interface FormData {
   nome: string;
@@ -16,9 +19,14 @@ interface FormData {
   endereco: string;
   telefone: string;
   email: string;
+  nif?: string;
+  licencaComercial?: string;
+  alvara?: string;
+  registroComercial?: string;
+  nomeRepresentante?: string;
 }
 
-export default function StepDadosRequerente() {
+const StepDadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }) => {
   const classes = useStyles();
   const dispatch = useDispatch();
   const [formData, setFormData] = useState<FormData>({
@@ -44,6 +52,126 @@ export default function StepDadosRequerente() {
       payload: { dadosSolicitante: formData }
     });
   }, [formData, dispatch]);
+
+  const renderCamposEspecificos = () => {
+    switch (tipoSolicitante) {
+      case 'distribuidor':
+        return (
+          <>
+            <Grid xs={12} md item className={classes.gridItem}>
+              <TextField
+                required
+                type="text"
+                label="NIF"
+                fullWidth
+                size="small"
+                name="nif"
+                variant="outlined"
+                onChange={handleChange}
+                value={formData.nif || ''}
+              />
+            </Grid>
+            <Grid xs={12} md item className={classes.gridItem}>
+              <TextField
+                required
+                type="text"
+                label="Licença Comercial"
+                fullWidth
+                size="small"
+                name="licencaComercial"
+                variant="outlined"
+                onChange={handleChange}
+                value={formData.licencaComercial || ''}
+              />
+            </Grid>
+          </>
+        );
+
+      case 'importador':
+        return (
+          <>
+            <Grid xs={12} md item className={classes.gridItem}>
+              <TextField
+                required
+                type="text"
+                label="NIF"
+                fullWidth
+                size="small"
+                name="nif"
+                variant="outlined"
+                onChange={handleChange}
+                value={formData.nif || ''}
+              />
+            </Grid>
+            <Grid xs={12} md item className={classes.gridItem}>
+              <TextField
+                required
+                type="text"
+                label="Alvará"
+                fullWidth
+                size="small"
+                name="alvara"
+                variant="outlined"
+                onChange={handleChange}
+                value={formData.alvara || ''}
+              />
+            </Grid>
+          </>
+        );
+
+      case 'pessoaColetiva':
+        return (
+          <>
+            <Grid xs={12} md item className={classes.gridItem}>
+              <TextField
+                required
+                type="text"
+                label="Registro Comercial"
+                fullWidth
+                size="small"
+                name="registroComercial"
+                variant="outlined"
+                onChange={handleChange}
+                value={formData.registroComercial || ''}
+              />
+            </Grid>
+            <Grid xs={12} md item className={classes.gridItem}>
+              <TextField
+                required
+                type="text"
+                label="Nome do Representante Legal"
+                fullWidth
+                size="small"
+                name="nomeRepresentante"
+                variant="outlined"
+                onChange={handleChange}
+                value={formData.nomeRepresentante || ''}
+              />
+            </Grid>
+          </>
+        );
+
+      case 'pessoaSingular':
+        return (
+          <Grid xs={12} md item className={classes.gridItem}>
+            <TextField
+              required
+              type="text"
+              label="NIF"
+              fullWidth
+              size="small"
+              name="nif"
+              variant="outlined"
+              onChange={handleChange}
+              value={formData.nif || ''}
+            />
+          </Grid>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <Box>
@@ -83,33 +211,7 @@ export default function StepDadosRequerente() {
       </Grid>
 
       <Grid container>
-        <Grid xs={12} md item className={classes.gridItem}>
-          <TextField
-            required
-            type="text"
-            label="Número de Registro"
-            fullWidth
-            size="small"
-            name="numeroRegistro"
-            variant="outlined"
-            onChange={handleChange}
-            value={formData.numeroRegistro}
-          />
-        </Grid>
-
-        <Grid xs={12} md item className={classes.gridItem}>
-          <TextField
-            required
-            type="email"
-            label="Email"
-            fullWidth
-            size="small"
-            name="email"
-            variant="outlined"
-            onChange={handleChange}
-            value={formData.email}
-          />
-        </Grid>
+        {renderCamposEspecificos()}
       </Grid>
 
       <Grid container>
@@ -141,6 +243,24 @@ export default function StepDadosRequerente() {
           />
         </Grid>
       </Grid>
+
+      <Grid container>
+        <Grid xs={12} md item className={classes.gridItem}>
+          <TextField
+            required
+            type="email"
+            label="Email"
+            fullWidth
+            size="small"
+            name="email"
+            variant="outlined"
+            onChange={handleChange}
+            value={formData.email}
+          />
+        </Grid>
+      </Grid>
     </Box>
   );
-}
+};
+
+export default StepDadosRequerente;
