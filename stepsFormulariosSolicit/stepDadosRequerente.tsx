@@ -61,7 +61,7 @@ interface FormData {
   email: string;
   nif?: string;
   licencaComercial?: string;
-  alvara?: string;
+  numeroProcesso?: string;
   registroComercial?: string;
   nomeRepresentante?: string;
   estabelecimentoId?: string;
@@ -127,42 +127,44 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
   };
 
   const handlePesquisaChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setPesquisaEstabelecimento(e.target.value);
+    const valor = e.target.value;
+    setPesquisaEstabelecimento(valor);
   };
 
   const pesquisarEstabelecimentos = async () => {
     if (!pesquisaEstabelecimento.trim()) return;
-
+    
+    console.log('DEBUG - Tipo Solicitante:', tipoSolicitante);
     setBuscandoEstabelecimentos(true);
     setErroApi('');
     
     try {
-      const response = await api.get('/estabelecimentos');
+      // Usar o formato correto da API
+      const payload = {
+        search: pesquisaEstabelecimento.trim()
+      };
       
-      if (response.data && Array.isArray(response.data)) {
-        console.log("daods:", response)
-        // Filtrar estabelecimentos baseado na pesquisa
-        const resultados = response.data.filter((est: Estabelecimento) => {
-          const termoPesquisa = pesquisaEstabelecimento.toLowerCase();
-          return (
-            est.nome.toLowerCase().includes(termoPesquisa) ||
-            est.empresa.nome.toLowerCase().includes(termoPesquisa) ||
-            est.empresa.nif.includes(pesquisaEstabelecimento) ||
-            est.numeroProcesso.toLowerCase().includes(termoPesquisa)
-          ) && est.approved && est.status === 'Activo'; // Apenas estabelecimentos aprovados e ativos
-        });
+      const response = await api.post('/estabelecimento/search', payload);
+      
+      console.log('📦 DEBUG - Dados da resposta:', response.data);
+      
+      // Verificar se response.data existe e tem o array estabelecimentos
+      if (response.data && response.data.estabelecimentos && Array.isArray(response.data.estabelecimentos)) {
         
-        setEstabelecimentos(resultados);
-        console.log("daods:", resultados)
+        // Filtrar apenas estabelecimentos aprovados e ativos
+        const estabelecimentosValidos = response.data.estabelecimentos.filter((est: Estabelecimento) =>
+          est.approved && est.status === 'Activo'
+        );
         
-        if (resultados.length === 0) {
-          setErroApi('Nenhum estabelecimento encontrado com os critérios de pesquisa.');
+        setEstabelecimentos(estabelecimentosValidos);
+        
+        if (estabelecimentosValidos.length === 0) {
+          setErroApi('Nenhum estabelecimento ativo encontrado com os critérios de pesquisa.');
         }
       } else {
         setErroApi('Formato de resposta inválido da API.');
       }
     } catch (error: any) {
-      console.error('Erro ao buscar estabelecimentos:', error);
       setErroApi(error.response?.data?.message || 'Erro ao buscar estabelecimentos. Tente novamente.');
       setEstabelecimentos([]);
     } finally {
@@ -177,19 +179,21 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
     const enderecoCompleto = `${estabelecimento.empresa.rua}, ${estabelecimento.empresa.bairro}, ${estabelecimento.empresa.municipio}, ${estabelecimento.empresa.provincia}`;
     
     // Preencher automaticamente os campos do formulário com dados da empresa
-    setFormData(prev => ({
-      ...prev,
+    const novoFormData = {
+      ...formData,
       nome: estabelecimento.empresa.nome,
       endereco: enderecoCompleto,
       nif: estabelecimento.empresa.nif,
       telefone: estabelecimento.empresa.tel1 || '',
       email: estabelecimento.directorTecnico?.dadosPessoais?.email || '',
       licencaComercial: estabelecimento.numeroProcesso || '',
-      alvara: estabelecimento.numeroProcesso || '',
+      numeroProcesso: estabelecimento.numeroProcesso || '',
       registroComercial: estabelecimento.numeroProcesso || '',
       estabelecimentoId: estabelecimento._id,
       estabelecimentoNome: estabelecimento.nome
-    }));
+    };
+    
+    setFormData(novoFormData);
 
     // Limpar a pesquisa
     setPesquisaEstabelecimento('');
@@ -207,7 +211,7 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
       telefone: '',
       email: '',
       licencaComercial: '',
-      alvara: '',
+      numeroProcesso: '',
       registroComercial: '',
       estabelecimentoId: '',
       estabelecimentoNome: ''
@@ -287,7 +291,7 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
                 name="alvara"
                 variant="outlined"
                 onChange={handleChange}
-                value={formData.alvara || ''}
+                value={formData.numeroProcesso || ''}
                 disabled={!!estabelecimentoSelecionado}
               />
             </Grid>
@@ -398,7 +402,7 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
             <Box>
               <Box style={{ display: 'flex', alignItems: 'center' }}>
                 <TextField
-                  placeholder="Digite o nome do estabelecimento, empresa ou NIF..."
+                  placeholder="Digite o Número de Autorizacao da Empresa, ou Número de Processo..."
                   fullWidth
                   size="small"
                   variant="outlined"
@@ -439,8 +443,8 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
                               <div><strong>Empresa:</strong> {estabelecimento.empresa.nome}</div>
                               <div><strong>NIF:</strong> {estabelecimento.empresa.nif}</div>
                               <div><strong>Localização:</strong> {estabelecimento.empresa.municipio}, {estabelecimento.empresa.provincia}</div>
-                              <div><strong>Processo:</strong> {estabelecimento.numeroProcesso}</div>
-                              <div><strong>Status:</strong> {estabelecimento.status}</div>
+                              {/* <div><strong>Processo:</strong> {estabelecimento.numeroProcesso}</div>
+                              <div><strong>Status:</strong> {estabelecimento.status}</div> */}
                             </div>
                           }
                         />
