@@ -68,19 +68,42 @@ interface FormData {
   estabelecimentoNome?: string;
 }
 
+interface EstabelecimentoAPI {
+  estabelecimentoId: string;
+  tipoRemetente: string;
+  nome: string;
+  nifBi: string;
+  email: string;
+  tel: string;
+  provincia: string;
+  municipio: string;
+  bairro: string;
+  justificativa: string;
+  remetidoPorNome: string;
+  remetidoPorTel: string;
+  remetidoPorEmail: string;
+  remetidoPorBi: string;
+  remetidoPorDataNascimento: string;
+  remetidoPorGenero: string;
+  userId: string;
+}
+
 interface Estabelecimento {
   _id: string;
   nome: string;
   provincia: string;
   municipio: string;
   bairro: string;
-  rua: string;
-  numeroProcesso: string;
-  numeroEntrada: number;
-  status: string;
-  tipo: string | null;
-  approved: boolean;
-  empresa: {
+  rua?: string;
+  numeroProcesso?: string;
+  numeroEntrada?: number;
+  status?: string;
+  tipo?: string | null;
+  approved?: boolean;
+  nif: string;
+  telefone: string;
+  email: string;
+  empresa?: {
     _id: string;
     nome: string;
     nif: string;
@@ -131,40 +154,122 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
     setPesquisaEstabelecimento(valor);
   };
 
+  // Função para converter dados da API para formato interno
+  const convertApiDataToEstabelecimento = (apiData: EstabelecimentoAPI): Estabelecimento => {
+    return {
+      _id: apiData.estabelecimentoId,
+      nome: apiData.nome,
+      provincia: apiData.provincia,
+      municipio: apiData.municipio,
+      bairro: apiData.bairro,
+      nif: apiData.nifBi,
+      telefone: apiData.tel,
+      email: apiData.email,
+      status: 'Activo', // Assumindo que dados retornados estão ativos
+      approved: true, // Assumindo que dados retornados estão aprovados
+      empresa: {
+        _id: apiData.estabelecimentoId,
+        nome: apiData.nome,
+        nif: apiData.nifBi,
+        tel1: apiData.tel,
+        provincia: apiData.provincia,
+        municipio: apiData.municipio,
+        bairro: apiData.bairro,
+        rua: '', // Não disponível na API atual
+        representante: apiData.remetidoPorNome
+      }
+    };
+  };
+
   const pesquisarEstabelecimentos = async () => {
     if (!pesquisaEstabelecimento.trim()) return;
     
     console.log('DEBUG - Tipo Solicitante:', tipoSolicitante);
+    console.log('DEBUG - Pesquisando por:', pesquisaEstabelecimento);
+    
     setBuscandoEstabelecimentos(true);
     setErroApi('');
     
     try {
-      // Usar o formato correto da API
-      const payload = {
-        search: pesquisaEstabelecimento.trim()
-      };
-      
-      const response = await api.post('/estabelecimento/search', payload);
-      
-      console.log('📦 DEBUG - Dados da resposta:', response.data);
-      
-      // Verificar se response.data existe e tem o array estabelecimentos
-      if (response.data && response.data.estabelecimentos && Array.isArray(response.data.estabelecimentos)) {
+      // Tentar diferentes endpoints e formatos
+      let response;
+      let estabelecimentosEncontrados: Estabelecimento[] = [];
+
+      // Método 1: Endpoint de busca original
+      try {
+        const payload = {
+          search: pesquisaEstabelecimento.trim()
+        };
         
-        // Filtrar apenas estabelecimentos aprovados e ativos
-        const estabelecimentosValidos = response.data.estabelecimentos.filter((est: Estabelecimento) =>
-          est.approved && est.status === 'Activo'
-        );
+        response = await api.post('/estabelecimento/search', payload);
+        console.log('📦 DEBUG - Resposta método 1:', response.data);
         
-        setEstabelecimentos(estabelecimentosValidos);
-        
-        if (estabelecimentosValidos.length === 0) {
-          setErroApi('Nenhum estabelecimento ativo encontrado com os critérios de pesquisa.');
+        if (response.data && response.data.estabelecimentos && Array.isArray(response.data.estabelecimentos)) {
+          estabelecimentosEncontrados = response.data.estabelecimentos.filter((est: any) =>
+            est.approved && est.status === 'Activo'
+          );
         }
-      } else {
-        setErroApi('Formato de resposta inválido da API.');
+      } catch (error1) {
+        console.log('Método 1 falhou, tentando método 2');
+        
+        // Método 2: Buscar pela estrutura de dados mostrada na imagem
+        try {
+          // Se a estrutura da API retorna um objeto com chaves como na imagem
+          response = await api.get(`/estabelecimento/buscar/${pesquisaEstabelecimento.trim()}`);
+          console.log('📦 DEBUG - Resposta método 2:', response.data);
+          
+          // Se retornar um único objeto
+          if (response.data && response.data.estabelecimentoId) {
+            const estabelecimento = convertApiDataToEstabelecimento(response.data as EstabelecimentoAPI);
+            estabelecimentosEncontrados = [estabelecimento];
+          }
+        } catch (error2) {
+          console.log('Método 2 falhou, tentando método 3');
+          
+          // Método 3: Lista todos e filtra localmente (use com cuidado)
+          try {
+            response = await api.get('/estabelecimento/list');
+            console.log('📦 DEBUG - Resposta método 3:', response.data);
+            
+            if (response.data && Array.isArray(response.data)) {
+              const termo = pesquisaEstabelecimento.toLowerCase();
+              estabelecimentosEncontrados = response.data
+                .filter((item: any) => {
+                  // Verifica se tem a estrutura da API mostrada na imagem
+                  if (item.estabelecimentoId && item.nome && item.nifBi) {
+                    return item.nome.toLowerCase().includes(termo) || 
+                           item.nifBi.includes(termo);
+                  }
+                  // Ou se tem a estrutura tradicional
+                  return (item.nome && item.nome.toLowerCase().includes(termo)) ||
+                         (item.empresa && item.empresa.nome && item.empresa.nome.toLowerCase().includes(termo)) ||
+                         (item.empresa && item.empresa.nif && item.empresa.nif.includes(termo));
+                })
+                .map((item: any) => {
+                  // Converter se for o formato da API
+                  if (item.estabelecimentoId && item.nome && item.nifBi) {
+                    return convertApiDataToEstabelecimento(item as EstabelecimentoAPI);
+                  }
+                  return item;
+                })
+                .filter((est: Estabelecimento) => est.approved !== false && est.status !== 'Inativo');
+            }
+          } catch (error3) {
+            throw error1; // Throw original error if all methods fail
+          }
+        }
       }
+
+      console.log('📦 DEBUG - Estabelecimentos encontrados:', estabelecimentosEncontrados);
+      
+      setEstabelecimentos(estabelecimentosEncontrados);
+      
+      if (estabelecimentosEncontrados.length === 0) {
+        setErroApi('Nenhum estabelecimento ativo encontrado com os critérios de pesquisa.');
+      }
+      
     } catch (error: any) {
+      console.error('Erro na pesquisa:', error);
       setErroApi(error.response?.data?.message || 'Erro ao buscar estabelecimentos. Tente novamente.');
       setEstabelecimentos([]);
     } finally {
@@ -176,16 +281,18 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
     setEstabelecimentoSelecionado(estabelecimento);
     
     // Construir endereço completo
-    const enderecoCompleto = `${estabelecimento.empresa.rua}, ${estabelecimento.empresa.bairro}, ${estabelecimento.empresa.municipio}, ${estabelecimento.empresa.provincia}`;
+    const enderecoCompleto = estabelecimento.empresa 
+      ? `${estabelecimento.empresa.rua || ''}, ${estabelecimento.empresa.bairro}, ${estabelecimento.empresa.municipio}, ${estabelecimento.empresa.provincia}`.replace(/^, /, '')
+      : `${estabelecimento.bairro}, ${estabelecimento.municipio}, ${estabelecimento.provincia}`;
     
-    // Preencher automaticamente os campos do formulário com dados da empresa
+    // Preencher automaticamente os campos do formulário
     const novoFormData = {
       ...formData,
-      nome: estabelecimento.empresa.nome,
+      nome: estabelecimento.empresa?.nome || estabelecimento.nome,
       endereco: enderecoCompleto,
-      nif: estabelecimento.empresa.nif,
-      telefone: estabelecimento.empresa.tel1 || '',
-      email: estabelecimento.directorTecnico?.dadosPessoais?.email || '',
+      nif: estabelecimento.empresa?.nif || estabelecimento.nif,
+      telefone: estabelecimento.empresa?.tel1 || estabelecimento.telefone || '',
+      email: estabelecimento.directorTecnico?.dadosPessoais?.email || estabelecimento.email || '',
       licencaComercial: estabelecimento.numeroProcesso || '',
       numeroProcesso: estabelecimento.numeroProcesso || '',
       registroComercial: estabelecimento.numeroProcesso || '',
@@ -288,7 +395,7 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
                 label="Alvará / Número do Processo"
                 fullWidth
                 size="small"
-                name="alvara"
+                name="numeroProcesso"
                 variant="outlined"
                 onChange={handleChange}
                 value={formData.numeroProcesso || ''}
@@ -379,10 +486,12 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
                     primary={estabelecimentoSelecionado.nome}
                     secondary={
                       <div>
-                        <div><strong>Empresa:</strong> {estabelecimentoSelecionado.empresa.nome}</div>
-                        <div><strong>NIF:</strong> {estabelecimentoSelecionado.empresa.nif}</div>
-                        <div><strong>Localização:</strong> {estabelecimentoSelecionado.empresa.municipio}, {estabelecimentoSelecionado.empresa.provincia}</div>
-                        <div><strong>Processo:</strong> {estabelecimentoSelecionado.numeroProcesso}</div>
+                        <div><strong>Empresa:</strong> {estabelecimentoSelecionado.empresa?.nome || estabelecimentoSelecionado.nome}</div>
+                        <div><strong>NIF:</strong> {estabelecimentoSelecionado.empresa?.nif || estabelecimentoSelecionado.nif}</div>
+                        <div><strong>Localização:</strong> {estabelecimentoSelecionado.municipio}, {estabelecimentoSelecionado.provincia}</div>
+                        {estabelecimentoSelecionado.numeroProcesso && (
+                          <div><strong>Processo:</strong> {estabelecimentoSelecionado.numeroProcesso}</div>
+                        )}
                       </div>
                     }
                   />
@@ -402,7 +511,7 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
             <Box>
               <Box style={{ display: 'flex', alignItems: 'center' }}>
                 <TextField
-                  placeholder="Digite o Número de Autorizacao da Empresa, ou Número de Processo..."
+                  placeholder="Digite o Nome da Empresa, NIF, ou Número de Processo..."
                   fullWidth
                   size="small"
                   variant="outlined"
@@ -440,11 +549,11 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
                           primary={estabelecimento.nome}
                           secondary={
                             <div>
-                              <div><strong>Empresa:</strong> {estabelecimento.empresa.nome}</div>
-                              <div><strong>NIF:</strong> {estabelecimento.empresa.nif}</div>
-                              <div><strong>Localização:</strong> {estabelecimento.empresa.municipio}, {estabelecimento.empresa.provincia}</div>
-                              {/* <div><strong>Processo:</strong> {estabelecimento.numeroProcesso}</div>
-                              <div><strong>Status:</strong> {estabelecimento.status}</div> */}
+                              <div><strong>Empresa:</strong> {estabelecimento.empresa?.nome || estabelecimento.nome}</div>
+                              <div><strong>NIF:</strong> {estabelecimento.empresa?.nif || estabelecimento.nif}</div>
+                              <div><strong>Localização:</strong> {estabelecimento.municipio}, {estabelecimento.provincia}</div>
+                              <div><strong>Email:</strong> {estabelecimento.email}</div>
+                              <div><strong>Telefone:</strong> {estabelecimento.telefone}</div>
                             </div>
                           }
                         />

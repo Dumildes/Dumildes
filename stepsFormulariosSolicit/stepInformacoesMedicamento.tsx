@@ -1,7 +1,8 @@
 // StepInformacoesUnificado.tsx
-import { Box, Grid, Typography, FormControlLabel, Checkbox, Paper } from "@material-ui/core";
+import { Box, Grid, Typography, FormControlLabel, Checkbox, Paper, Button, IconButton } from "@material-ui/core";
 import TextField from '@material-ui/core/TextField';
 import { makeStyles } from '@material-ui/core/styles';
+import { Add as AddIcon, Delete as DeleteIcon } from '@material-ui/icons';
 import { useDispatch } from 'react-redux';
 import { useState, useEffect, ChangeEvent } from 'react';
 
@@ -28,7 +29,8 @@ const useStyles = makeStyles({
     border: '1px solid #e0e0e0',
     borderRadius: 8,
     backgroundColor: '#ffffff',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.08)'
+    boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
+    position: 'relative'
   },
   sectionTitle: {
     margin: 15,
@@ -44,10 +46,37 @@ const useStyles = makeStyles({
   checkboxTitle: {
     marginBottom: 8,
     fontWeight: 600
+  },
+  addButton: {
+    marginTop: 16,
+    marginBottom: 8,
+    backgroundColor: '#1976d2',
+    color: 'white',
+    '&:hover': {
+      backgroundColor: '#1565c0'
+    }
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    color: '#f44336'
+  },
+  itemHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingRight: 40
+  },
+  itemNumber: {
+    fontWeight: 600,
+    color: '#1976d2'
   }
 });
 
 interface MedicamentoFormData {
+  id: string;
   nome: string;
   dosagem: string;
   formaFarmaceutica: string;
@@ -60,6 +89,7 @@ interface MedicamentoFormData {
 }
 
 interface TecnologiaFormData {
+  id: string;
   nome: string;
   fabricante: string;
   enderecoFabricante: string;
@@ -77,8 +107,13 @@ export default function StepInformacoesUnificado() {
   const [isMedicamentoSelected, setIsMedicamentoSelected] = useState(false);
   const [isTecnologiaSelected, setIsTecnologiaSelected] = useState(false);
 
-  // Estados para formulários
-  const [medicamentoData, setMedicamentoData] = useState<MedicamentoFormData>({
+  // Estados para arrays de formulários
+  const [medicamentos, setMedicamentos] = useState<MedicamentoFormData[]>([]);
+  const [tecnologias, setTecnologias] = useState<TecnologiaFormData[]>([]);
+
+  // Função para criar novo medicamento vazio
+  const createEmptyMedicamento = (): MedicamentoFormData => ({
+    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
     nome: '',
     dosagem: '',
     formaFarmaceutica: '',
@@ -90,7 +125,9 @@ export default function StepInformacoesUnificado() {
     tipoAnalise: ''
   });
 
-  const [tecnologiaData, setTecnologiaData] = useState<TecnologiaFormData>({
+  // Função para criar nova tecnologia vazia
+  const createEmptyTecnologia = (): TecnologiaFormData => ({
+    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
     nome: '',
     fabricante: '',
     enderecoFabricante: '',
@@ -100,19 +137,35 @@ export default function StepInformacoesUnificado() {
     tipoAnalise: ''
   });
 
-  // Handlers para campos dos formulários
-  const handleMedicamentoChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setMedicamentoData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
+  // Handlers para adicionar novos itens
+  const handleAddMedicamento = () => {
+    setMedicamentos(prev => [...prev, createEmptyMedicamento()]);
   };
 
-  const handleTecnologiaChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setTecnologiaData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
+  const handleAddTecnologia = () => {
+    setTecnologias(prev => [...prev, createEmptyTecnologia()]);
+  };
+
+  // Handlers para remover itens
+  const handleRemoveMedicamento = (id: string) => {
+    setMedicamentos(prev => prev.filter(item => item.id !== id));
+  };
+
+  const handleRemoveTecnologia = (id: string) => {
+    setTecnologias(prev => prev.filter(item => item.id !== id));
+  };
+
+  // Handlers para campos dos formulários
+  const handleMedicamentoChange = (id: string, field: string, value: string) => {
+    setMedicamentos(prev => prev.map(item => 
+      item.id === id ? { ...item, [field]: value } : item
+    ));
+  };
+
+  const handleTecnologiaChange = (id: string, field: string, value: string) => {
+    setTecnologias(prev => prev.map(item => 
+      item.id === id ? { ...item, [field]: value } : item
+    ));
   };
 
   // Handlers para checkboxes modificados para serem mutuamente exclusivos
@@ -123,32 +176,14 @@ export default function StepInformacoesUnificado() {
     // Se marcando Medicamento, desmarcar Tecnologia
     if (isChecked) {
       setIsTecnologiaSelected(false);
-      
-      // Limpar dados de Tecnologia ao desmarcar
-      setTecnologiaData({
-        nome: '',
-        fabricante: '',
-        enderecoFabricante: '',
-        lote: '',
-        dataFabrico: '',
-        dataValidade: '',
-        tipoAnalise: ''
-      });
-    }
-
-    // Se desmarcando Medicamento, limpar seus dados
-    if (!isChecked) {
-      setMedicamentoData({
-        nome: '',
-        dosagem: '',
-        formaFarmaceutica: '',
-        fabricante: '',
-        enderecoFabricante: '',
-        lote: '',
-        dataFabrico: '',
-        dataValidade: '',
-        tipoAnalise: ''
-      });
+      setTecnologias([]);
+      // Adicionar primeiro medicamento se não houver nenhum
+      if (medicamentos.length === 0) {
+        setMedicamentos([createEmptyMedicamento()]);
+      }
+    } else {
+      // Se desmarcando Medicamento, limpar seus dados
+      setMedicamentos([]);
     }
   };
 
@@ -159,32 +194,14 @@ export default function StepInformacoesUnificado() {
     // Se marcando Tecnologia, desmarcar Medicamento
     if (isChecked) {
       setIsMedicamentoSelected(false);
-      
-      // Limpar dados de Medicamento ao desmarcar
-      setMedicamentoData({
-        nome: '',
-        dosagem: '',
-        formaFarmaceutica: '',
-        fabricante: '',
-        enderecoFabricante: '',
-        lote: '',
-        dataFabrico: '',
-        dataValidade: '',
-        tipoAnalise: ''
-      });
-    }
-
-    // Se desmarcando Tecnologia, limpar seus dados
-    if (!isChecked) {
-      setTecnologiaData({
-        nome: '',
-        fabricante: '',
-        enderecoFabricante: '',
-        lote: '',
-        dataFabrico: '',
-        dataValidade: '',
-        tipoAnalise: ''
-      });
+      setMedicamentos([]);
+      // Adicionar primeira tecnologia se não houver nenhuma
+      if (tecnologias.length === 0) {
+        setTecnologias([createEmptyTecnologia()]);
+      }
+    } else {
+      // Se desmarcando Tecnologia, limpar seus dados
+      setTecnologias([]);
     }
   };
 
@@ -192,20 +209,19 @@ export default function StepInformacoesUnificado() {
   useEffect(() => {
     dispatch({
       type: 'dadosMedicamento',
-      payload: { dadosMedicamento: isMedicamentoSelected ? medicamentoData : null }
+      payload: { dadosMedicamento: isMedicamentoSelected && medicamentos.length > 0 ? medicamentos : null }
     });
-  }, [medicamentoData, dispatch, isMedicamentoSelected]);
+  }, [medicamentos, dispatch, isMedicamentoSelected]);
 
   useEffect(() => {
     dispatch({
       type: 'dadosTecnologiaSaude',
-      payload: { dadosTecnologiaSaude: isTecnologiaSelected ? tecnologiaData : null }
+      payload: { dadosTecnologiaSaude: isTecnologiaSelected && tecnologias.length > 0 ? tecnologias : null }
     });
-  }, [tecnologiaData, dispatch, isTecnologiaSelected]);
+  }, [tecnologias, dispatch, isTecnologiaSelected]);
 
   return (
     <Box>
-
       <Paper className={classes.paper}>
         <Typography variant="h6">
           Tipo de Produto
@@ -238,264 +254,324 @@ export default function StepInformacoesUnificado() {
         </Box>
       </Paper>
 
-      {/* Seção de Medicamento */}
+      {/* Seção de Medicamentos */}
       {isMedicamentoSelected && (
-        <Box className={classes.formBox}>
-          <Typography variant="h6" className={classes.sectionTitle}>
-            INFORMAÇÕES DO MEDICAMENTO
-          </Typography>
+        <Box>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="h6" className={classes.sectionTitle}>
+              INFORMAÇÕES DOS MEDICAMENTOS
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleAddMedicamento}
+              className={classes.addButton}
+            >
+              Adicionar Medicamento
+            </Button>
+          </Box>
 
-          <Grid container className={classes.gridContainer}>
-            <Grid xs={12} md item className={classes.gridItem}>
-              <TextField
-                required
-                type="text"
-                label="Nome do Medicamento"
-                fullWidth
-                size="small"
-                name="nome"
-                variant="outlined"
-                onChange={handleMedicamentoChange}
-                value={medicamentoData.nome}
-              />
-            </Grid>
+          {medicamentos.map((medicamento, index) => (
+            <Box key={medicamento.id} className={classes.formBox}>
+              {medicamentos.length > 1 && (
+                <IconButton
+                  className={classes.deleteButton}
+                  onClick={() => handleRemoveMedicamento(medicamento.id)}
+                  size="small"
+                >
+                  <DeleteIcon />
+                </IconButton>
+              )}
 
-            <Grid xs={12} md item className={classes.gridItem}>
-              <TextField
-                required
-                type="text"
-                label="Dosagem"
-                fullWidth
-                size="small"
-                name="dosagem"
-                variant="outlined"
-                onChange={handleMedicamentoChange}
-                value={medicamentoData.dosagem}
-              />
-            </Grid>
-          </Grid>
+              <Box className={classes.itemHeader}>
+                <Typography variant="subtitle1" className={classes.itemNumber}>
+                  Medicamento {index + 1}
+                </Typography>
+              </Box>
 
-          <Grid container className={classes.gridContainer}>
-            <Grid xs={12} md item className={classes.gridItem}>
-              <TextField
-                required
-                type="text"
-                label="Forma Farmacêutica"
-                fullWidth
-                size="small"
-                name="formaFarmaceutica"
-                variant="outlined"
-                onChange={handleMedicamentoChange}
-                value={medicamentoData.formaFarmaceutica}
-              />
-            </Grid>
+              <Grid container className={classes.gridContainer}>
+                <Grid xs={12} md item className={classes.gridItem}>
+                  <TextField
+                    required
+                    type="text"
+                    label="Nome do Medicamento"
+                    fullWidth
+                    size="small"
+                    name="nome"
+                    variant="outlined"
+                    onChange={(e) => handleMedicamentoChange(medicamento.id, 'nome', e.target.value)}
+                    value={medicamento.nome}
+                  />
+                </Grid>
 
-            <Grid xs={12} md item className={classes.gridItem}>
-              <TextField
-                required
-                type="text"
-                label="Fabricante"
-                fullWidth
-                size="small"
-                name="fabricante"
-                variant="outlined"
-                onChange={handleMedicamentoChange}
-                value={medicamentoData.fabricante}
-              />
-            </Grid>
-          </Grid>
+                <Grid xs={12} md item className={classes.gridItem}>
+                  <TextField
+                    required
+                    type="text"
+                    label="Dosagem"
+                    fullWidth
+                    size="small"
+                    name="dosagem"
+                    variant="outlined"
+                    onChange={(e) => handleMedicamentoChange(medicamento.id, 'dosagem', e.target.value)}
+                    value={medicamento.dosagem}
+                  />
+                </Grid>
+              </Grid>
 
-          <Grid container className={classes.gridContainer}>
-            <Grid xs={12} md={4} item className={classes.gridItem}>
-              <TextField
-                required
-                type="text"
-                label="Lote"
-                fullWidth
-                size="small"
-                name="lote"
-                variant="outlined"
-                onChange={handleMedicamentoChange}
-                value={medicamentoData.lote}
-              />
-            </Grid>
+              <Grid container className={classes.gridContainer}>
+                <Grid xs={12} md item className={classes.gridItem}>
+                  <TextField
+                    required
+                    type="text"
+                    label="Forma Farmacêutica"
+                    fullWidth
+                    size="small"
+                    name="formaFarmaceutica"
+                    variant="outlined"
+                    onChange={(e) => handleMedicamentoChange(medicamento.id, 'formaFarmaceutica', e.target.value)}
+                    value={medicamento.formaFarmaceutica}
+                  />
+                </Grid>
 
-            <Grid xs={12} md={4} item className={classes.gridItem}>
-              <TextField
-                required
-                type="date"
-                label="Data de Fabricação"
-                fullWidth
-                size="small"
-                name="dataFabrico"
-                variant="outlined"
-                InputLabelProps={{ shrink: true }}
-                onChange={handleMedicamentoChange}
-                value={medicamentoData.dataFabrico}
-              />
-            </Grid>
+                <Grid xs={12} md item className={classes.gridItem}>
+                  <TextField
+                    required
+                    type="text"
+                    label="Fabricante"
+                    fullWidth
+                    size="small"
+                    name="fabricante"
+                    variant="outlined"
+                    onChange={(e) => handleMedicamentoChange(medicamento.id, 'fabricante', e.target.value)}
+                    value={medicamento.fabricante}
+                  />
+                </Grid>
+              </Grid>
 
-            <Grid xs={12} md={4} item className={classes.gridItem}>
-              <TextField
-                required
-                type="date"
-                label="Data de Validade"
-                fullWidth
-                size="small"
-                name="dataValidade"
-                variant="outlined"
-                InputLabelProps={{ shrink: true }}
-                onChange={handleMedicamentoChange}
-                value={medicamentoData.dataValidade}
-              />
-            </Grid>
-          </Grid>
+              <Grid container className={classes.gridContainer}>
+                <Grid xs={12} md={4} item className={classes.gridItem}>
+                  <TextField
+                    required
+                    type="text"
+                    label="Lote"
+                    fullWidth
+                    size="small"
+                    name="lote"
+                    variant="outlined"
+                    onChange={(e) => handleMedicamentoChange(medicamento.id, 'lote', e.target.value)}
+                    value={medicamento.lote}
+                  />
+                </Grid>
 
-          <Grid container className={classes.gridContainer}>
-            <Grid xs={12} md item className={classes.gridItem}>
-              <TextField
-                type="text"
-                label="Endereço do Fabricante"
-                fullWidth
-                size="small"
-                name="enderecoFabricante"
-                variant="outlined"
-                onChange={handleMedicamentoChange}
-                value={medicamentoData.enderecoFabricante}
-              />
-            </Grid>
-          </Grid>
+                <Grid xs={12} md={4} item className={classes.gridItem}>
+                  <TextField
+                    required
+                    type="date"
+                    label="Data de Fabricação"
+                    fullWidth
+                    size="small"
+                    name="dataFabrico"
+                    variant="outlined"
+                    InputLabelProps={{ shrink: true }}
+                    onChange={(e) => handleMedicamentoChange(medicamento.id, 'dataFabrico', e.target.value)}
+                    value={medicamento.dataFabrico}
+                  />
+                </Grid>
 
-          <Grid container className={classes.gridContainer}>
-            <Grid xs={12} md item className={classes.gridItem}>
-              <TextField
-                type="text"
-                label="Tipo de Análise"
-                fullWidth
-                size="small"
-                name="tipoAnalise"
-                variant="outlined"
-                onChange={handleMedicamentoChange}
-                value={medicamentoData.tipoAnalise}
-              />
-            </Grid>
-          </Grid>
+                <Grid xs={12} md={4} item className={classes.gridItem}>
+                  <TextField
+                    required
+                    type="date"
+                    label="Data de Validade"
+                    fullWidth
+                    size="small"
+                    name="dataValidade"
+                    variant="outlined"
+                    InputLabelProps={{ shrink: true }}
+                    onChange={(e) => handleMedicamentoChange(medicamento.id, 'dataValidade', e.target.value)}
+                    value={medicamento.dataValidade}
+                  />
+                </Grid>
+              </Grid>
+
+              <Grid container className={classes.gridContainer}>
+                <Grid xs={12} md item className={classes.gridItem}>
+                  <TextField
+                    type="text"
+                    label="Endereço do Fabricante"
+                    fullWidth
+                    size="small"
+                    name="enderecoFabricante"
+                    variant="outlined"
+                    onChange={(e) => handleMedicamentoChange(medicamento.id, 'enderecoFabricante', e.target.value)}
+                    value={medicamento.enderecoFabricante}
+                  />
+                </Grid>
+              </Grid>
+
+              <Grid container className={classes.gridContainer}>
+                <Grid xs={12} md item className={classes.gridItem}>
+                  <TextField
+                    type="text"
+                    label="Tipo de Análise"
+                    fullWidth
+                    size="small"
+                    name="tipoAnalise"
+                    variant="outlined"
+                    onChange={(e) => handleMedicamentoChange(medicamento.id, 'tipoAnalise', e.target.value)}
+                    value={medicamento.tipoAnalise}
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+          ))}
         </Box>
       )}
 
-      {/* Seção de Tecnologia de Saúde */}
+      {/* Seção de Tecnologias de Saúde */}
       {isTecnologiaSelected && (
-        <Box className={classes.formBox}>
-          <Typography variant="h6" className={classes.sectionTitle}>
-            INFORMAÇÕES DA TECNOLOGIA DE SAÚDE
-          </Typography>
+        <Box>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="h6" className={classes.sectionTitle}>
+              INFORMAÇÕES DAS TECNOLOGIAS DE SAÚDE
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleAddTecnologia}
+              className={classes.addButton}
+            >
+              Adicionar Tecnologia
+            </Button>
+          </Box>
 
-          <Grid container className={classes.gridContainer}>
-            <Grid xs={12} md item className={classes.gridItem}>
-              <TextField
-                required
-                type="text"
-                label="Nome do Produto"
-                fullWidth
-                size="small"
-                name="nome"
-                variant="outlined"
-                onChange={handleTecnologiaChange}
-                value={tecnologiaData.nome}
-              />
-            </Grid>
+          {tecnologias.map((tecnologia, index) => (
+            <Box key={tecnologia.id} className={classes.formBox}>
+              {tecnologias.length > 1 && (
+                <IconButton
+                  className={classes.deleteButton}
+                  onClick={() => handleRemoveTecnologia(tecnologia.id)}
+                  size="small"
+                >
+                  <DeleteIcon />
+                </IconButton>
+              )}
 
-            <Grid xs={12} md item className={classes.gridItem}>
-              <TextField
-                required
-                type="text"
-                label="Fabricante"
-                fullWidth
-                size="small"
-                name="fabricante"
-                variant="outlined"
-                onChange={handleTecnologiaChange}
-                value={tecnologiaData.fabricante}
-              />
-            </Grid>
-          </Grid>
+              <Box className={classes.itemHeader}>
+                <Typography variant="subtitle1" className={classes.itemNumber}>
+                  Tecnologia de Saúde {index + 1}
+                </Typography>
+              </Box>
 
-          <Grid container className={classes.gridContainer}>
-            <Grid xs={12} md item className={classes.gridItem}>
-              <TextField
-                required
-                type="text"
-                label="Endereço do Fabricante"
-                fullWidth
-                size="small"
-                name="enderecoFabricante"
-                variant="outlined"
-                onChange={handleTecnologiaChange}
-                value={tecnologiaData.enderecoFabricante}
-              />
-            </Grid>
+              <Grid container className={classes.gridContainer}>
+                <Grid xs={12} md item className={classes.gridItem}>
+                  <TextField
+                    required
+                    type="text"
+                    label="Nome do Produto"
+                    fullWidth
+                    size="small"
+                    name="nome"
+                    variant="outlined"
+                    onChange={(e) => handleTecnologiaChange(tecnologia.id, 'nome', e.target.value)}
+                    value={tecnologia.nome}
+                  />
+                </Grid>
 
-            <Grid xs={12} md item className={classes.gridItem}>
-              <TextField
-                required
-                type="text"
-                label="Lote"
-                fullWidth
-                size="small"
-                name="lote"
-                variant="outlined"
-                onChange={handleTecnologiaChange}
-                value={tecnologiaData.lote}
-              />
-            </Grid>
-          </Grid>
+                <Grid xs={12} md item className={classes.gridItem}>
+                  <TextField
+                    required
+                    type="text"
+                    label="Fabricante"
+                    fullWidth
+                    size="small"
+                    name="fabricante"
+                    variant="outlined"
+                    onChange={(e) => handleTecnologiaChange(tecnologia.id, 'fabricante', e.target.value)}
+                    value={tecnologia.fabricante}
+                  />
+                </Grid>
+              </Grid>
 
-          <Grid container className={classes.gridContainer}>
-            <Grid xs={12} md item className={classes.gridItem}>
-              <TextField
-                required
-                type="date"
-                label="Data de Fabricação"
-                fullWidth
-                size="small"
-                name="dataFabrico"
-                variant="outlined"
-                InputLabelProps={{ shrink: true }}
-                onChange={handleTecnologiaChange}
-                value={tecnologiaData.dataFabrico}
-              />
-            </Grid>
+              <Grid container className={classes.gridContainer}>
+                <Grid xs={12} md item className={classes.gridItem}>
+                  <TextField
+                    required
+                    type="text"
+                    label="Endereço do Fabricante"
+                    fullWidth
+                    size="small"
+                    name="enderecoFabricante"
+                    variant="outlined"
+                    onChange={(e) => handleTecnologiaChange(tecnologia.id, 'enderecoFabricante', e.target.value)}
+                    value={tecnologia.enderecoFabricante}
+                  />
+                </Grid>
 
-            <Grid xs={12} md item className={classes.gridItem}>
-              <TextField
-                required
-                type="date"
-                label="Data de Validade"
-                fullWidth
-                size="small"
-                name="dataValidade"
-                variant="outlined"
-                InputLabelProps={{ shrink: true }}
-                onChange={handleTecnologiaChange}
-                value={tecnologiaData.dataValidade}
-              />
-            </Grid>
-          </Grid>
+                <Grid xs={12} md item className={classes.gridItem}>
+                  <TextField
+                    required
+                    type="text"
+                    label="Lote"
+                    fullWidth
+                    size="small"
+                    name="lote"
+                    variant="outlined"
+                    onChange={(e) => handleTecnologiaChange(tecnologia.id, 'lote', e.target.value)}
+                    value={tecnologia.lote}
+                  />
+                </Grid>
+              </Grid>
 
-          <Grid container className={classes.gridContainer}>
-            <Grid xs={12} md item className={classes.gridItem}>
-              <TextField
-                type="text"
-                label="Tipo de Análise"
-                fullWidth
-                size="small"
-                name="tipoAnalise"
-                variant="outlined"
-                onChange={handleTecnologiaChange}
-                value={tecnologiaData.tipoAnalise}
-              />
-            </Grid>
-          </Grid>
+              <Grid container className={classes.gridContainer}>
+                <Grid xs={12} md item className={classes.gridItem}>
+                  <TextField
+                    required
+                    type="date"
+                    label="Data de Fabricação"
+                    fullWidth
+                    size="small"
+                    name="dataFabrico"
+                    variant="outlined"
+                    InputLabelProps={{ shrink: true }}
+                    onChange={(e) => handleTecnologiaChange(tecnologia.id, 'dataFabrico', e.target.value)}
+                    value={tecnologia.dataFabrico}
+                  />
+                </Grid>
+
+                <Grid xs={12} md item className={classes.gridItem}>
+                  <TextField
+                    required
+                    type="date"
+                    label="Data de Validade"
+                    fullWidth
+                    size="small"
+                    name="dataValidade"
+                    variant="outlined"
+                    InputLabelProps={{ shrink: true }}
+                    onChange={(e) => handleTecnologiaChange(tecnologia.id, 'dataValidade', e.target.value)}
+                    value={tecnologia.dataValidade}
+                  />
+                </Grid>
+              </Grid>
+
+              <Grid container className={classes.gridContainer}>
+                <Grid xs={12} md item className={classes.gridItem}>
+                  <TextField
+                    type="text"
+                    label="Tipo de Análise"
+                    fullWidth
+                    size="small"
+                    name="tipoAnalise"
+                    variant="outlined"
+                    onChange={(e) => handleTecnologiaChange(tecnologia.id, 'tipoAnalise', e.target.value)}
+                    value={tecnologia.tipoAnalise}
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+          ))}
         </Box>
       )}
     </Box>

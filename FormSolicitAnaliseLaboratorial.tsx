@@ -80,7 +80,9 @@ export default function FormularioAnaliseLaboratorial() {
 
   // Atualizar estado local quando Redux state mudar
   useEffect(() => {
-    setFormState({
+    console.log('Redux State:', reduxState); // Debug log
+    
+    const newFormState = {
       dadosSolicitante: reduxState.dadosSolicitante || null,
       produtos: [
         ...(reduxState.dadosMedicamento ? [{
@@ -96,21 +98,44 @@ export default function FormularioAnaliseLaboratorial() {
       ],
       dadosJustificativa: reduxState.dadosJustificativa || null,
       dadosDocumentos: reduxState.dadosDocumentos || null
-    });
+    };
+
+    console.log('New Form State:', newFormState); // Debug log
+    
+    setFormState(newFormState);
   }, [reduxState]);
 
-  // Validações para cada step
+  // Validações para cada step - usando diretamente o Redux state para validação em tempo real
   const validateStep = (stepIndex: number): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
 
+    // Usar Redux state diretamente para validação mais atual
+    const currentDadosSolicitante = reduxState.dadosSolicitante;
+    const currentProdutos = [
+      ...(reduxState.dadosMedicamento ? [{
+        id: 'medicamento_1',
+        tipo: 'medicamento' as const,
+        dados: reduxState.dadosMedicamento
+      }] : []),
+      ...(reduxState.dadosTecnologiaSaude ? [{
+        id: 'tecnologia_1',
+        tipo: 'tecnologia' as const,
+        dados: reduxState.dadosTecnologiaSaude
+      }] : [])
+    ];
+    const currentJustificativa = reduxState.dadosJustificativa;
+    const currentDocumentos = reduxState.dadosDocumentos;
+
     switch (stepIndex) {
       case 0: // Dados do Solicitante
-        if (!formState.dadosSolicitante) {
+        console.log('Validating step 0 - currentDadosSolicitante:', currentDadosSolicitante); // Debug log
+        
+        if (!currentDadosSolicitante) {
           errors.push('Dados do solicitante são obrigatórios');
           break;
         }
         
-        const { nome, dataNascimento, endereco, telefone, email } = formState.dadosSolicitante;
+        const { nome, dataNascimento, endereco, telefone, email } = currentDadosSolicitante;
         
         if (!nome?.trim()) errors.push('Nome é obrigatório');
         if (!dataNascimento) errors.push('Data de nascimento é obrigatória');
@@ -120,27 +145,27 @@ export default function FormularioAnaliseLaboratorial() {
         
         // Validações específicas por tipo
         if (tipoSolicitante === 'distribuidor' || tipoSolicitante === 'importador') {
-          if (!formState.dadosSolicitante.nif?.trim()) errors.push('NIF é obrigatório');
-          if (!formState.dadosSolicitante.licencaComercial?.trim() && !formState.dadosSolicitante.numeroProcesso?.trim()) {
+          if (!currentDadosSolicitante.nif?.trim()) errors.push('NIF é obrigatório');
+          if (!currentDadosSolicitante.licencaComercial?.trim() && !currentDadosSolicitante.numeroProcesso?.trim()) {
             errors.push('Licença Comercial/Alvará é obrigatório');
           }
         }
         if (tipoSolicitante === 'pessoaColetiva') {
-          if (!formState.dadosSolicitante.registroComercial?.trim()) errors.push('Registro Comercial é obrigatório');
-          if (!formState.dadosSolicitante.nomeRepresentante?.trim()) errors.push('Nome do Representante é obrigatório');
+          if (!currentDadosSolicitante.registroComercial?.trim()) errors.push('Registro Comercial é obrigatório');
+          if (!currentDadosSolicitante.nomeRepresentante?.trim()) errors.push('Nome do Representante é obrigatório');
         }
         if (tipoSolicitante === 'pessoaSingular') {
-          if (!formState.dadosSolicitante.nif?.trim()) errors.push('NIF é obrigatório');
+          if (!currentDadosSolicitante.nif?.trim()) errors.push('NIF é obrigatório');
         }
         break;
 
       case 1: // Informações do Produto
-        if (formState.produtos.length === 0) {
+        if (currentProdutos.length === 0) {
           errors.push('Pelo menos um produto deve ser adicionado');
           break;
         }
         
-        formState.produtos.forEach((produto, index) => {
+        currentProdutos.forEach((produto, index) => {
           if (produto.tipo === 'medicamento') {
             const { nome, dosagem, formaFarmaceutica, fabricante, lote, dataFabrico, dataValidade } = produto.dados;
             if (!nome?.trim()) errors.push(`Produto ${index + 1}: Nome do medicamento é obrigatório`);
@@ -162,24 +187,25 @@ export default function FormularioAnaliseLaboratorial() {
         break;
 
       case 2: // Justificativa
-        if (!formState.dadosJustificativa?.justificativa?.trim()) {
+        if (!currentJustificativa?.justificativa?.trim()) {
           errors.push('Justificativa é obrigatória');
         }
         break;
 
       case 3: // Documentos
-        if (!formState.dadosDocumentos) {
+        if (!currentDocumentos) {
           errors.push('Documentos são obrigatórios');
           break;
         }
         
-        const { documento1, documento2, documento3 } = formState.dadosDocumentos;
+        const { documento1, documento2, documento3 } = currentDocumentos;
         if (!documento1) errors.push('BI é obrigatório');
         if (!documento2) errors.push('Factura do Medicamento é obrigatória');
         if (!documento3) errors.push('Cópia da Importação é obrigatória');
         break;
     }
 
+    console.log('Validation result for step', stepIndex, ':', { isValid: errors.length === 0, errors }); // Debug log
     return { isValid: errors.length === 0, errors };
   };
 
@@ -208,21 +234,25 @@ export default function FormularioAnaliseLaboratorial() {
   };
 
   const handleNext = () => {
-    // Validar step atual antes de avançar
-    const validation = validateStep(activeStep);
-    
-    if (!validation.isValid) {
-      setErrorMessage(validation.errors.join(', '));
-      return;
-    }
-
+    // Limpar mensagem de erro anterior
     setErrorMessage('');
     
-    if (activeStep === steps.length - 1) {
-      setShowConfirmDialog(true);
-    } else {
-      setActiveStep((prevActiveStep) => prevActiveStep + 1);
-    }
+    // Pequeno delay para garantir que o Redux state foi atualizado
+    setTimeout(() => {
+      // Validar step atual antes de avançar
+      const validation = validateStep(activeStep);
+      
+      if (!validation.isValid) {
+        setErrorMessage(validation.errors.join(', '));
+        return;
+      }
+
+      if (activeStep === steps.length - 1) {
+        setShowConfirmDialog(true);
+      } else {
+        setActiveStep((prevActiveStep) => prevActiveStep + 1);
+      }
+    }, 100);
   };
 
   const handleTipoSolicitanteChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -238,32 +268,49 @@ export default function FormularioAnaliseLaboratorial() {
   const prepararDadosParaEnvio = () => {
     const formData = new FormData();
     
+    // Usar dados atuais do Redux
+    const currentDadosSolicitante = reduxState.dadosSolicitante;
+    const currentProdutos = [
+      ...(reduxState.dadosMedicamento ? [{
+        id: 'medicamento_1',
+        tipo: 'medicamento' as const,
+        dados: reduxState.dadosMedicamento
+      }] : []),
+      ...(reduxState.dadosTecnologiaSaude ? [{
+        id: 'tecnologia_1',
+        tipo: 'tecnologia' as const,
+        dados: reduxState.dadosTecnologiaSaude
+      }] : [])
+    ];
+    const currentJustificativa = reduxState.dadosJustificativa;
+    const currentDocumentos = reduxState.dadosDocumentos;
+    
     // Dados do solicitante
-    if (formState.dadosSolicitante) {
+    if (currentDadosSolicitante) {
       formData.append('tipoSolicitante', tipoSolicitante);
-      formData.append('dadosSolicitante', JSON.stringify(formState.dadosSolicitante));
+      formData.append('dadosSolicitante', JSON.stringify(currentDadosSolicitante));
     }
     
     // Produtos
-    if (formState.produtos.length > 0) {
-      formData.append('produtos', JSON.stringify(formState.produtos));
+    if (currentProdutos.length > 0) {
+      formData.append('produtos', JSON.stringify(currentProdutos));
     }
     
     // Justificativa
-    if (formState.dadosJustificativa) {
-      formData.append('justificativa', formState.dadosJustificativa.justificativa);
+    if (currentJustificativa) {
+      formData.append('justificativa', currentJustificativa.justificativa);
     }
     
     // Documentos
-    if (formState.dadosDocumentos) {
-      if (formState.dadosDocumentos.documento1) {
-        formData.append('documento1', formState.dadosDocumentos.documento1.arquivo);
+    if (currentDocumentos) {
+      if (currentDocumentos.documento1) {
+        formData.append('documento1', currentDocumentos.documento1.arquivo);
       }
-      if (formState.dadosDocumentos.documento2) {
-        formData.append('documento2', formState.dadosDocumentos.documento2.arquivo);
+      if (currentDocumentos.documento2) {
+        formData.append('documento2', currentDocumentos.documento2.arquivo);
       }
-      if (formState.dadosDocumentos.documento3) {
-        formData.append('documento3', formState.dadosDocumentos.documento3.arquivo);
+      if (currentDocumentos.documento3) {
+        formData.append('documento3', currentDocumentos.documento3.arquivo);
       }
     }
     
@@ -446,10 +493,15 @@ export default function FormularioAnaliseLaboratorial() {
           
           <Box mt={2}>
             <Typography variant="subtitle2" gutterBottom>Resumo:</Typography>
-            <Typography variant="body2">• Solicitante: {formState.dadosSolicitante?.nome}</Typography>
-            <Typography variant="body2">• Produtos: {formState.produtos.length}</Typography>
+            <Typography variant="body2">• Solicitante: {reduxState.dadosSolicitante?.nome || 'N/A'}</Typography>
+            <Typography variant="body2">• Produtos: {
+              [
+                ...(reduxState.dadosMedicamento ? [1] : []),
+                ...(reduxState.dadosTecnologiaSaude ? [1] : [])
+              ].length
+            }</Typography>
             <Typography variant="body2">• Documentos anexados: {
-              Object.values(formState.dadosDocumentos || {}).filter(doc => doc !== null).length
+              Object.values(reduxState.dadosDocumentos || {}).filter(doc => doc !== null).length
             }/3</Typography>
           </Box>
         </DialogContent>
