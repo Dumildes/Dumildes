@@ -1,10 +1,11 @@
-import { Box, Grid, Typography, TextField, Button, Paper, List, ListItem, ListItemText, ListItemSecondaryAction, IconButton } from "@material-ui/core";
+import { Box, Grid, Typography, TextField, Button, Paper, List, ListItem, ListItemText, ListItemSecondaryAction, IconButton, MenuItem } from "@material-ui/core";
 import { makeStyles } from '@material-ui/core/styles';
 import { useDispatch } from 'react-redux';
 import { useState, useEffect, ChangeEvent } from 'react';
 import SearchIcon from '@material-ui/icons/Search';
 import BusinessIcon from '@material-ui/icons/Business';
 import CheckIcon from '@material-ui/icons/Check';
+import PersonIcon from '@material-ui/icons/Person';
 import api from '../../../../../services/api';
 
 const useStyles = makeStyles({
@@ -44,6 +45,13 @@ const useStyles = makeStyles({
     marginBottom: 12,
     fontWeight: 500,
     color: '#85287e'
+  },
+  sectionDivider: {
+    margin: '24px 0 16px 0',
+    color: '#85287e',
+    fontWeight: 500,
+    borderBottom: '2px solid #85287e',
+    paddingBottom: 8
   }
 });
 
@@ -52,20 +60,33 @@ export interface StepDadosRequerenteProps {
 }
 
 interface FormData {
+  // Dados do estabelecimento
+  estabelecimentoId?: string;
   nome: string;
-  dataNascimento: string;
-  genero: string;
-  numeroRegistro: string;
-  endereco: string;
-  telefone: string;
+  nifBi?: string;
   email: string;
+  tel?: string;
+  provincia?: string;
+  municipio?: string;
+  bairro?: string;
+  endereco: string;
+  
+  // Dados específicos por tipo
+  numeroRegistro: string;
   nif?: string;
   licencaComercial?: string;
   numeroProcesso?: string;
   registroComercial?: string;
   nomeRepresentante?: string;
-  estabelecimentoId?: string;
   estabelecimentoNome?: string;
+  
+  // Dados do solicitante (pessoa que está fazendo a solicitação)
+  remetidoPorNome: string;
+  remetidoPorTel: string;
+  remetidoPorBi: string;
+  remetidoPorEmail: string;
+  remetidoPorDataNascimento: string;
+  remetidoPorGenero: string;
 }
 
 interface EstabelecimentoAPI {
@@ -101,7 +122,9 @@ interface Estabelecimento {
   tipo?: string | null;
   approved?: boolean;
   nif: string;
+  nifBi?: string;
   telefone: string;
+  tel?: string;
   email: string;
   empresa?: {
     _id: string;
@@ -128,12 +151,15 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
   const dispatch = useDispatch();
   const [formData, setFormData] = useState<FormData>({
     nome: '',
-    dataNascimento: '',
-    genero: '',
     numeroRegistro: '',
     endereco: '',
-    telefone: '',
-    email: ''
+    email: '',
+    remetidoPorNome: '',
+    remetidoPorTel: '',
+    remetidoPorBi: '',
+    remetidoPorEmail: '',
+    remetidoPorDataNascimento: '',
+    remetidoPorGenero: ''
   });
 
   const [pesquisaEstabelecimento, setPesquisaEstabelecimento] = useState('');
@@ -163,10 +189,12 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
       municipio: apiData.municipio,
       bairro: apiData.bairro,
       nif: apiData.nifBi,
+      nifBi: apiData.nifBi,
       telefone: apiData.tel,
+      tel: apiData.tel,
       email: apiData.email,
-      status: 'Activo', // Assumindo que dados retornados estão ativos
-      approved: true, // Assumindo que dados retornados estão aprovados
+      status: 'Activo',
+      approved: true,
       empresa: {
         _id: apiData.estabelecimentoId,
         nome: apiData.nome,
@@ -175,7 +203,7 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
         provincia: apiData.provincia,
         municipio: apiData.municipio,
         bairro: apiData.bairro,
-        rua: '', // Não disponível na API atual
+        rua: '',
         representante: apiData.remetidoPorNome
       }
     };
@@ -191,7 +219,6 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
     setErroApi('');
     
     try {
-      // Tentar diferentes endpoints e formatos
       let response;
       let estabelecimentosEncontrados: Estabelecimento[] = [];
 
@@ -212,13 +239,11 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
       } catch (error1) {
         console.log('Método 1 falhou, tentando método 2');
         
-        // Método 2: Buscar pela estrutura de dados mostrada na imagem
+        // Método 2: Buscar pela estrutura de dados da API
         try {
-          // Se a estrutura da API retorna um objeto com chaves como na imagem
           response = await api.get(`/estabelecimento/buscar/${pesquisaEstabelecimento.trim()}`);
           console.log('📦 DEBUG - Resposta método 2:', response.data);
           
-          // Se retornar um único objeto
           if (response.data && response.data.estabelecimentoId) {
             const estabelecimento = convertApiDataToEstabelecimento(response.data as EstabelecimentoAPI);
             estabelecimentosEncontrados = [estabelecimento];
@@ -226,7 +251,7 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
         } catch (error2) {
           console.log('Método 2 falhou, tentando método 3');
           
-          // Método 3: Lista todos e filtra localmente (use com cuidado)
+          // Método 3: Lista todos e filtra localmente
           try {
             response = await api.get('/estabelecimento/list');
             console.log('📦 DEBUG - Resposta método 3:', response.data);
@@ -235,18 +260,15 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
               const termo = pesquisaEstabelecimento.toLowerCase();
               estabelecimentosEncontrados = response.data
                 .filter((item: any) => {
-                  // Verifica se tem a estrutura da API mostrada na imagem
                   if (item.estabelecimentoId && item.nome && item.nifBi) {
                     return item.nome.toLowerCase().includes(termo) || 
                            item.nifBi.includes(termo);
                   }
-                  // Ou se tem a estrutura tradicional
                   return (item.nome && item.nome.toLowerCase().includes(termo)) ||
                          (item.empresa && item.empresa.nome && item.empresa.nome.toLowerCase().includes(termo)) ||
                          (item.empresa && item.empresa.nif && item.empresa.nif.includes(termo));
                 })
                 .map((item: any) => {
-                  // Converter se for o formato da API
                   if (item.estabelecimentoId && item.nome && item.nifBi) {
                     return convertApiDataToEstabelecimento(item as EstabelecimentoAPI);
                   }
@@ -255,7 +277,7 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
                 .filter((est: Estabelecimento) => est.approved !== false && est.status !== 'Inativo');
             }
           } catch (error3) {
-            throw error1; // Throw original error if all methods fail
+            throw error1;
           }
         }
       }
@@ -280,24 +302,32 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
   const selecionarEstabelecimento = (estabelecimento: Estabelecimento) => {
     setEstabelecimentoSelecionado(estabelecimento);
     
-    // Construir endereço completo
+    // Construir endereço completo usando os campos da API
     const enderecoCompleto = estabelecimento.empresa 
       ? `${estabelecimento.empresa.rua || ''}, ${estabelecimento.empresa.bairro}, ${estabelecimento.empresa.municipio}, ${estabelecimento.empresa.provincia}`.replace(/^, /, '')
       : `${estabelecimento.bairro}, ${estabelecimento.municipio}, ${estabelecimento.provincia}`;
     
-    // Preencher automaticamente os campos do formulário
+    // Preencher automaticamente os campos do formulário com dados do estabelecimento
+    // Apenas preenche se o campo atual estiver vazio ou se o dado da API não estiver vazio
     const novoFormData = {
       ...formData,
-      nome: estabelecimento.empresa?.nome || estabelecimento.nome,
-      endereco: enderecoCompleto,
-      nif: estabelecimento.empresa?.nif || estabelecimento.nif,
-      telefone: estabelecimento.empresa?.tel1 || estabelecimento.telefone || '',
-      email: estabelecimento.directorTecnico?.dadosPessoais?.email || estabelecimento.email || '',
-      licencaComercial: estabelecimento.numeroProcesso || '',
-      numeroProcesso: estabelecimento.numeroProcesso || '',
-      registroComercial: estabelecimento.numeroProcesso || '',
+      // Dados do estabelecimento da API - preenche apenas se disponível
       estabelecimentoId: estabelecimento._id,
-      estabelecimentoNome: estabelecimento.nome
+      nome: estabelecimento.nome || formData.nome,
+      nifBi: estabelecimento.nifBi || estabelecimento.nif || formData.nifBi,
+      email: estabelecimento.email || formData.email,
+      tel: estabelecimento.tel || estabelecimento.telefone || formData.tel,
+      provincia: estabelecimento.provincia || formData.provincia,
+      municipio: estabelecimento.municipio || formData.municipio,
+      bairro: estabelecimento.bairro || formData.bairro,
+      endereco: enderecoCompleto || formData.endereco,
+      estabelecimentoNome: estabelecimento.nome || formData.estabelecimentoNome,
+      
+      // Campos específicos baseados na estrutura existente - preenche apenas se disponível
+      nif: estabelecimento.nifBi || estabelecimento.nif || formData.nif,
+      licencaComercial: estabelecimento.numeroProcesso || formData.licencaComercial,
+      numeroProcesso: estabelecimento.numeroProcesso || formData.numeroProcesso,
+      registroComercial: estabelecimento.numeroProcesso || formData.registroComercial,
     };
     
     setFormData(novoFormData);
@@ -312,15 +342,19 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
     setEstabelecimentoSelecionado(null);
     setFormData(prev => ({
       ...prev,
+      estabelecimentoId: '',
       nome: '',
+      nifBi: '',
+      email: '',
+      tel: '',
+      provincia: '',
+      municipio: '',
+      bairro: '',
       endereco: '',
       nif: '',
-      telefone: '',
-      email: '',
       licencaComercial: '',
       numeroProcesso: '',
       registroComercial: '',
-      estabelecimentoId: '',
       estabelecimentoNome: ''
     }));
   };
@@ -463,7 +497,7 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
   return (
     <Box>
       <Typography variant="h5" style={{ margin: 15 }}>
-        DADOS DO SOLICITANTE
+        DADOS DO REQUERENTE
       </Typography>
 
       {/* Seção de Pesquisa de Estabelecimentos */}
@@ -477,7 +511,7 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
           {estabelecimentoSelecionado ? (
             <Box>
               <Typography variant="body2" color="textSecondary" style={{ marginBottom: 8 }}>
-                Estabelecimento selecionado:
+                Estabelecimento selecionado (você pode editar os campos abaixo):
               </Typography>
               <Paper className={`${classes.estabelecimentoItem} ${classes.estabelecimentoSelecionado}`}>
                 <ListItem>
@@ -486,12 +520,10 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
                     primary={estabelecimentoSelecionado.nome}
                     secondary={
                       <div>
-                        <div><strong>Empresa:</strong> {estabelecimentoSelecionado.empresa?.nome || estabelecimentoSelecionado.nome}</div>
-                        <div><strong>NIF:</strong> {estabelecimentoSelecionado.empresa?.nif || estabelecimentoSelecionado.nif}</div>
-                        <div><strong>Localização:</strong> {estabelecimentoSelecionado.municipio}, {estabelecimentoSelecionado.provincia}</div>
-                        {estabelecimentoSelecionado.numeroProcesso && (
-                          <div><strong>Processo:</strong> {estabelecimentoSelecionado.numeroProcesso}</div>
-                        )}
+                        <div><strong>NIF/BI:</strong> {estabelecimentoSelecionado.nifBi || estabelecimentoSelecionado.nif}</div>
+                        <div><strong>Email:</strong> {estabelecimentoSelecionado.email}</div>
+                        <div><strong>Telefone:</strong> {estabelecimentoSelecionado.tel || estabelecimentoSelecionado.telefone}</div>
+                        <div><strong>Localização:</strong> {estabelecimentoSelecionado.bairro}, {estabelecimentoSelecionado.municipio}, {estabelecimentoSelecionado.provincia}</div>
                       </div>
                     }
                   />
@@ -549,11 +581,10 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
                           primary={estabelecimento.nome}
                           secondary={
                             <div>
-                              <div><strong>Empresa:</strong> {estabelecimento.empresa?.nome || estabelecimento.nome}</div>
-                              <div><strong>NIF:</strong> {estabelecimento.empresa?.nif || estabelecimento.nif}</div>
-                              <div><strong>Localização:</strong> {estabelecimento.municipio}, {estabelecimento.provincia}</div>
+                              <div><strong>NIF/BI:</strong> {estabelecimento.nifBi || estabelecimento.nif}</div>
                               <div><strong>Email:</strong> {estabelecimento.email}</div>
-                              <div><strong>Telefone:</strong> {estabelecimento.telefone}</div>
+                              <div><strong>Telefone:</strong> {estabelecimento.tel || estabelecimento.telefone}</div>
+                              <div><strong>Localização:</strong> {estabelecimento.bairro}, {estabelecimento.municipio}, {estabelecimento.provincia}</div>
                             </div>
                           }
                         />
@@ -571,34 +602,40 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
         </Paper>
       )}
 
+      {/* Dados do Estabelecimento/Empresa */}
+      <Typography variant="h6" className={classes.sectionDivider}>
+        <BusinessIcon style={{ verticalAlign: 'middle', marginRight: 8 }} />
+        Dados do Estabelecimento/Empresa
+      </Typography>
+
       <Grid container>
         <Grid xs={12} md item className={classes.gridItem}>
           <TextField
             required
             type="text"
-            label="Nome Completo"
+            label="Nome da Empresa/Estabelecimento"
             fullWidth
             size="small"
             name="nome"
             variant="outlined"
             onChange={handleChange}
             value={formData.nome}
-            disabled={!!estabelecimentoSelecionado}
+            helperText={estabelecimentoSelecionado ? "Dados carregados do estabelecimento - você pode editar se necessário" : ""}
           />
         </Grid>
 
         <Grid xs={12} md item className={classes.gridItem}>
           <TextField
             required
-            type="date"
-            label="Data de Nascimento"
+            type="email"
+            label="Email"
             fullWidth
             size="small"
-            name="dataNascimento"
+            name="email"
             variant="outlined"
-            InputLabelProps={{ shrink: true }}
             onChange={handleChange}
-            value={formData.dataNascimento}
+            value={formData.email}
+            helperText={estabelecimentoSelecionado ? "Dados carregados do estabelecimento - você pode editar se necessário" : ""}
           />
         </Grid>
       </Grid>
@@ -625,15 +662,52 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
 
         <Grid xs={12} md item className={classes.gridItem}>
           <TextField
-            required
             type="tel"
             label="Telefone"
             fullWidth
             size="small"
-            name="telefone"
+            name="tel"
             variant="outlined"
             onChange={handleChange}
-            value={formData.telefone}
+            value={formData.tel || ''}
+            disabled={!!estabelecimentoSelecionado}
+          />
+        </Grid>
+      </Grid>
+
+      {/* Dados do Solicitante */}
+      <Typography variant="h6" className={classes.sectionDivider}>
+        <PersonIcon style={{ verticalAlign: 'middle', marginRight: 8 }} />
+        Dados de Quem Está Fazendo a Solicitação
+      </Typography>
+
+      <Grid container>
+        <Grid xs={12} md item className={classes.gridItem}>
+          <TextField
+            required
+            type="text"
+            label="Nome Completo do Solicitante"
+            fullWidth
+            size="small"
+            name="remetidoPorNome"
+            variant="outlined"
+            onChange={handleChange}
+            value={formData.remetidoPorNome}
+          />
+        </Grid>
+
+        <Grid xs={12} md item className={classes.gridItem}>
+          <TextField
+            required
+            type="date"
+            label="Data de Nascimento"
+            fullWidth
+            size="small"
+            name="remetidoPorDataNascimento"
+            variant="outlined"
+            InputLabelProps={{ shrink: true }}
+            onChange={handleChange}
+            value={formData.remetidoPorDataNascimento}
           />
         </Grid>
       </Grid>
@@ -642,14 +716,62 @@ const DadosRequerente: React.FC<StepDadosRequerenteProps> = ({ tipoSolicitante }
         <Grid xs={12} md item className={classes.gridItem}>
           <TextField
             required
-            type="email"
-            label="Email"
+            select
+            label="Gênero"
             fullWidth
             size="small"
-            name="email"
+            name="remetidoPorGenero"
             variant="outlined"
             onChange={handleChange}
-            value={formData.email}
+            value={formData.remetidoPorGenero}
+          >
+            <MenuItem value="Masculino">Masculino</MenuItem>
+            <MenuItem value="Feminino">Feminino</MenuItem>
+            <MenuItem value="Outro">Outro</MenuItem>
+          </TextField>
+        </Grid>
+
+        <Grid xs={12} md item className={classes.gridItem}>
+          <TextField
+            required
+            type="text"
+            label="BI/Número de Identificação"
+            fullWidth
+            size="small"
+            name="remetidoPorBi"
+            variant="outlined"
+            onChange={handleChange}
+            value={formData.remetidoPorBi}
+          />
+        </Grid>
+      </Grid>
+
+      <Grid container>
+        <Grid xs={12} md item className={classes.gridItem}>
+          <TextField
+            required
+            type="tel"
+            label="Telefone do Solicitante"
+            fullWidth
+            size="small"
+            name="remetidoPorTel"
+            variant="outlined"
+            onChange={handleChange}
+            value={formData.remetidoPorTel}
+          />
+        </Grid>
+
+        <Grid xs={12} md item className={classes.gridItem}>
+          <TextField
+            required
+            type="email"
+            label="Email do Solicitante"
+            fullWidth
+            size="small"
+            name="remetidoPorEmail"
+            variant="outlined"
+            onChange={handleChange}
+            value={formData.remetidoPorEmail}
           />
         </Grid>
       </Grid>

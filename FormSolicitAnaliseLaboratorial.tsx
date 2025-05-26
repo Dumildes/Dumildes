@@ -351,8 +351,8 @@ export default function FormularioAnaliseLaboratorial() {
     } catch (error: any) {
       console.error('Erro ao enviar solicitação:', error);
       setErrorMessage(
-        error?.response?.data?.message || 
-        error?.message || 
+        error?.response?.data?.message ||
+        error?.message ||
         'Erro ao processar solicitação. Tente novamente.'
       );
     } finally {
