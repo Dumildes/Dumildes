@@ -10,22 +10,40 @@ import HeaderSession from '../../../../utils/headerSession';
 import RegisterAccess from '../../../../utils/registerAccess';
 import api from '../../../../services/api';
 
-// Interfaces para tipagem
+// Interfaces corrigidas para tipagem
 interface DadosSolicitante {
+  // Dados do estabelecimento/empresa
+  estabelecimentoId?: string;
   nome: string;
-  dataNascimento: string;
-  genero: string;
-  numeroRegistro: string;
-  endereco: string;
-  telefone: string;
   email: string;
+  endereco: string;
+  tel?: string;
+  provincia?: string;
+  municipio?: string;
+  bairro?: string;
+  estabelecimentoNome?: string;
+  
+  // Campos específicos por tipo de solicitante
   nif?: string;
+  nifBi?: string;
   licencaComercial?: string;
   numeroProcesso?: string;
   registroComercial?: string;
   nomeRepresentante?: string;
-  estabelecimentoId?: string;
-  estabelecimentoNome?: string;
+  numeroRegistro: string;
+  
+  // Dados da pessoa que está fazendo a solicitação
+  remetidoPorNome: string;
+  remetidoPorTel: string;
+  remetidoPorBi: string;
+  remetidoPorEmail: string;
+  remetidoPorDataNascimento: string;
+  remetidoPorGenero: string;
+  
+  // Campos legados (manter compatibilidade)
+  dataNascimento?: string;
+  genero?: string;
+  telefone?: string;
 }
 
 interface Produto {
@@ -80,7 +98,7 @@ export default function FormularioAnaliseLaboratorial() {
 
   // Atualizar estado local quando Redux state mudar
   useEffect(() => {
-    console.log('Redux State:', reduxState); // Debug log
+    console.log('Redux State:', reduxState);
     
     const newFormState = {
       dadosSolicitante: reduxState.dadosSolicitante || null,
@@ -100,12 +118,12 @@ export default function FormularioAnaliseLaboratorial() {
       dadosDocumentos: reduxState.dadosDocumentos || null
     };
 
-    console.log('New Form State:', newFormState); // Debug log
+    console.log('New Form State:', newFormState);
     
     setFormState(newFormState);
   }, [reduxState]);
 
-  // Validações para cada step - usando diretamente o Redux state para validação em tempo real
+  // Validações corrigidas para cada step
   const validateStep = (stepIndex: number): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
 
@@ -128,34 +146,68 @@ export default function FormularioAnaliseLaboratorial() {
 
     switch (stepIndex) {
       case 0: // Dados do Solicitante
-        console.log('Validating step 0 - currentDadosSolicitante:', currentDadosSolicitante); // Debug log
+        console.log('Validating step 0 - currentDadosSolicitante:', currentDadosSolicitante);
         
         if (!currentDadosSolicitante) {
           errors.push('Dados do solicitante são obrigatórios');
           break;
         }
         
-        const { nome, dataNascimento, endereco, telefone, email } = currentDadosSolicitante;
+        // Validação dos dados da empresa/estabelecimento
+        if (!currentDadosSolicitante.nome?.trim()) {
+          errors.push('Nome da empresa/estabelecimento é obrigatório');
+        }
+        if (!currentDadosSolicitante.email?.trim()) {
+          errors.push('Email da empresa é obrigatório');
+        }
+        if (!currentDadosSolicitante.endereco?.trim()) {
+          errors.push('Endereço é obrigatório');
+        }
         
-        if (!nome?.trim()) errors.push('Nome é obrigatório');
-        if (!dataNascimento) errors.push('Data de nascimento é obrigatória');
-        if (!endereco?.trim()) errors.push('Endereço é obrigatório');
-        if (!telefone?.trim()) errors.push('Telefone é obrigatório');
-        if (!email?.trim()) errors.push('Email é obrigatório');
+        // Validação dos dados do solicitante (pessoa física)
+        if (!currentDadosSolicitante.remetidoPorNome?.trim()) {
+          errors.push('Nome do solicitante é obrigatório');
+        }
+        if (!currentDadosSolicitante.remetidoPorDataNascimento) {
+          errors.push('Data de nascimento do solicitante é obrigatória');
+        }
+        if (!currentDadosSolicitante.remetidoPorGenero?.trim()) {
+          errors.push('Gênero do solicitante é obrigatório');
+        }
+        if (!currentDadosSolicitante.remetidoPorBi?.trim()) {
+          errors.push('BI do solicitante é obrigatório');
+        }
+        if (!currentDadosSolicitante.remetidoPorTel?.trim()) {
+          errors.push('Telefone do solicitante é obrigatório');
+        }
+        if (!currentDadosSolicitante.remetidoPorEmail?.trim()) {
+          errors.push('Email do solicitante é obrigatório');
+        }
         
-        // Validações específicas por tipo
+        // Validações específicas por tipo de solicitante
         if (tipoSolicitante === 'distribuidor' || tipoSolicitante === 'importador') {
-          if (!currentDadosSolicitante.nif?.trim()) errors.push('NIF é obrigatório');
-          if (!currentDadosSolicitante.licencaComercial?.trim() && !currentDadosSolicitante.numeroProcesso?.trim()) {
-            errors.push('Licença Comercial/Alvará é obrigatório');
+          if (!currentDadosSolicitante.nif?.trim() && !currentDadosSolicitante.nifBi?.trim()) {
+            errors.push('NIF é obrigatório');
+          }
+          if (tipoSolicitante === 'distribuidor' && !currentDadosSolicitante.licencaComercial?.trim()) {
+            errors.push('Licença Comercial é obrigatória');
+          }
+          if (tipoSolicitante === 'importador' && !currentDadosSolicitante.numeroProcesso?.trim()) {
+            errors.push('Número do Processo/Alvará é obrigatório');
           }
         }
         if (tipoSolicitante === 'pessoaColetiva') {
-          if (!currentDadosSolicitante.registroComercial?.trim()) errors.push('Registro Comercial é obrigatório');
-          if (!currentDadosSolicitante.nomeRepresentante?.trim()) errors.push('Nome do Representante é obrigatório');
+          if (!currentDadosSolicitante.registroComercial?.trim()) {
+            errors.push('Registro Comercial é obrigatório');
+          }
+          if (!currentDadosSolicitante.nomeRepresentante?.trim()) {
+            errors.push('Nome do Representante Legal é obrigatório');
+          }
         }
         if (tipoSolicitante === 'pessoaSingular') {
-          if (!currentDadosSolicitante.nif?.trim()) errors.push('NIF é obrigatório');
+          if (!currentDadosSolicitante.nif?.trim() && !currentDadosSolicitante.nifBi?.trim()) {
+            errors.push('NIF é obrigatório');
+          }
         }
         break;
 
@@ -205,7 +257,7 @@ export default function FormularioAnaliseLaboratorial() {
         break;
     }
 
-    console.log('Validation result for step', stepIndex, ':', { isValid: errors.length === 0, errors }); // Debug log
+    console.log('Validation result for step', stepIndex, ':', { isValid: errors.length === 0, errors });
     return { isValid: errors.length === 0, errors };
   };
 
@@ -493,7 +545,8 @@ export default function FormularioAnaliseLaboratorial() {
           
           <Box mt={2}>
             <Typography variant="subtitle2" gutterBottom>Resumo:</Typography>
-            <Typography variant="body2">• Solicitante: {reduxState.dadosSolicitante?.nome || 'N/A'}</Typography>
+            <Typography variant="body2">• Solicitante: {reduxState.dadosSolicitante?.remetidoPorNome || reduxState.dadosSolicitante?.nome || 'N/A'}</Typography>
+            <Typography variant="body2">• Empresa: {reduxState.dadosSolicitante?.nome || 'N/A'}</Typography>
             <Typography variant="body2">• Produtos: {
               [
                 ...(reduxState.dadosMedicamento ? [1] : []),
