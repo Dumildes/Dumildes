@@ -11,11 +11,12 @@ import Cards from '../../../components/Guest/Home/Cards';
 import NavSearch from '../../../components/Guest/Home/NavSearch';
 import SlideArea from '../../../components/Guest/Home/SlideArea';
 import PopupContent from '../../../components/Guest/Home/PopupContent';
-// import { ErrorResponse } from '../../../App';
 import { Container } from '@mui/material';
 import ConsultorPorQrCode from '../../../components/ConsultarQrCode';
-import ParalaxCNP from '../../../components/Guest/Home/ParalaxCNP'
+import ParalaxCNP from '../../../components/Guest/Home/ParalaxCNP';
+import { useParams } from 'react-router-dom';
 
+// ... (manter todas as interfaces existentes)
 export type Ordem = {
     _id: string,
     nome: string,
@@ -50,7 +51,6 @@ export interface OrdensProps {
     ordens: Ordem[]
 }
 
-// Definição correta das interfaces
 export interface MemberProps {
     members: Member[]
 }
@@ -127,13 +127,8 @@ export interface Member {
     dataInicio: string
 }
 
-export interface MemberProps {
-    members: Member[]
-}
-
-
 function Home() {
-
+    const { id } = useParams(); // Para capturar o ID do QR code
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [loadingMember, setLoadingMember] = useState(false);
@@ -142,36 +137,56 @@ function Home() {
     const [itemSearch, setItemSearch] = useState<string>("");
     const [members, setMembers] = useState<Member[]>([]);
     const [membersOriginal, setMembersOriginal] = useState<Member[]>([]);
+    const [isQrCodeSearch, setIsQrCodeSearch] = useState(false);
 
     useEffect(() => {
-
         const fetchOrdens = async () => {
             setLoading(true)
 
             try {
                 const response = await CNPApi.get('/ordems');
-
-                // Certifique-se de que o dado recebido é do tipo Ordem[]
                 const ordens: Ordem[] = response.data.ordens;
                 setOrdensList(ordens);
 
             } catch (err) {
-
                 console.log(err);
-
             } finally {
                 setLoading(false);
             }
         }
 
         fetchOrdens();
-
     }, []);
+
+    // Efeito para detectar QR code e definir ordem automaticamente
+    useEffect(() => {
+        if (id && members.length > 0 && !isQrCodeSearch) {
+            // Quando um membro é carregado via QR code, definir automaticamente a ordem
+            const member = members[0];
+            
+            // Tentar encontrar a ordem baseada no perfil do membro
+            const matchingOrdem = ordensList.find(ordem => 
+                ordem.profissao.toLowerCase().includes(member.perfil.toLowerCase()) ||
+                member.perfil.toLowerCase().includes(ordem.profissao.toLowerCase())
+            );
+
+            if (matchingOrdem) {
+                setItemSelected(matchingOrdem);
+                setIsQrCodeSearch(true);
+            } else if (ordensList.length > 0) {
+                // Se não encontrar uma correspondência específica, usar a primeira ordem ativa
+                const activeOrdem = ordensList.find(ordem => ordem.status === "Activo");
+                if (activeOrdem) {
+                    setItemSelected(activeOrdem);
+                    setIsQrCodeSearch(true);
+                }
+            }
+        }
+    }, [id, members, ordensList, isQrCodeSearch]);
 
     const handleOnChange = (item: string) => {
         if (item) {
             const ordem = JSON.parse(item);
-            // Agora você tem acesso ao objeto ordem completo
             setItemSelected(ordem);
             setItemSearch("");
         }
@@ -193,7 +208,7 @@ function Home() {
             setMembers(response.data.membros);
             setMembersOriginal(response.data.membros);
         } catch (err) {
-            const error = err as ErrorResponse;
+            const error = err as any;
             if (error.response?.data?.message)
                 toast.error(error.response.data.message);
             else
@@ -211,9 +226,7 @@ function Home() {
     }
 
     return (
-
-        <section >
-
+        <section>
             <div>
                 <SlideArea />
                 <NavSearch
@@ -226,8 +239,9 @@ function Home() {
                     members={members}
                     handleMemberRedirect={handleMemberRedirect}
                     loadingMember={loadingMember}
+                    isOpen={isOpen}
+                    setIsOpen={setIsOpen}
                 />
-
             </div>
 
             <div className='flex flex-col'>
@@ -251,7 +265,6 @@ function Home() {
                 setIsOpen={setIsOpen}
                 setPesquisa={setMembers}
                 setItemSelected={setItemSelected}
-                // setPesquisaError={setPesquisaError}
                 setLoad={setLoadingMember}
             />
             <Toaster position='top-right'/>

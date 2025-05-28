@@ -16,9 +16,9 @@ export default function ConsultorPorQrCode(props) {
             // props.setPesquisaError('')
             props.setLoad(true)
 
-            apiOfa.get(`membro/${"663cb87af9d03a7858d64bcc"}`)
+            apiOfa.get(`membro/${id}`)
                 .then(response => {
-                    // console.log(response)
+                     console.log(response)
                     props.setPesquisa([response.data.membro]);
                     props.setLoad(false)
                     props.setIsOpen(true)

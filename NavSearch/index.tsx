@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FiX } from "react-icons/fi";
 import { Ordem, Member } from "../../../../pages/Guest/Home";
 import {
@@ -19,8 +18,8 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import SearchIcon from '../../../../assets/Icons/pesquisarmembrosgeral.svg';
-import cnpPesquisa from '../../../../assets/cnppesquisa.svg' 
-import cnpLogo from '../../../../assets/cnplogo.svg' 
+import cnpPesquisa from '../../../../assets/cnppesquisa.svg'
+import cnpLogo from '../../../../assets/cnplogo.svg'
 
 interface NavSearchProps {
     ordens: Ordem[];
@@ -32,6 +31,8 @@ interface NavSearchProps {
     members: Member[];
     handleMemberRedirect: (member: Member) => void;
     loadingMember: boolean;
+    isOpen: boolean;
+    setIsOpen: (value: boolean) => void;
 }
 
 const style = {
@@ -59,8 +60,9 @@ export default function NavSearch({
     members,
     handleMemberRedirect,
     loadingMember,
+    isOpen,
+    setIsOpen,
 }: NavSearchProps) {
-    const [open, setOpen] = useState(false);
     const [localSearch, setLocalSearch] = useState("");
     const [showSelect, setShowSelect] = useState(true);
     const [selectedMember, setSelectedMember] = useState<Member | null>(null);
@@ -70,6 +72,15 @@ export default function NavSearch({
     const theme = useTheme();
     const isSmallDevice = useMediaQuery(theme.breakpoints.down('sm'));
     const loadingOrdens = !ordens || ordens.length === 0;
+
+    // Efeito para abrir modal automaticamente quando há membros (QR code)
+    useEffect(() => {
+        if (members.length > 0 && itemSelected) {
+            setIsOpen(true);
+            // Se há uma ordem selecionada automaticamente (QR code), esconder o select
+            setShowSelect(false);
+        }
+    }, [members, itemSelected, setIsOpen]);
 
     const handleInputChange = (value: string) => {
         setLocalSearch(value);
@@ -90,15 +101,13 @@ export default function NavSearch({
         handleSubmit(e);
         setViewMode("list");
         setSelectedMember(null);
-        setOpen(true);
+        setIsOpen(true);
     };
 
     const handleMemberSelect = (member: Member) => {
         setSelectedMember(member);
         setViewMode("details");
-        console.log("catera:", member)
-
-        // Não fechamos o modal aqui
+        console.log("carteira:", member);
     };
 
     const handleBackToList = () => {
@@ -107,11 +116,16 @@ export default function NavSearch({
     };
 
     const handleCloseAndRedirect = (member: Member) => {
-        setOpen(false);
-        // Aguarde o fechamento do modal e então redirecione
+        setIsOpen(false);
         setTimeout(() => {
             handleMemberRedirect(member);
         }, 300);
+    };
+
+    const handleCloseModal = () => {
+        setIsOpen(false);
+        setViewMode("list");
+        setSelectedMember(null);
     };
 
     // Formata a data para exibição
@@ -165,7 +179,7 @@ export default function NavSearch({
 
     return (
         <div className="w-full flex justify-center mt-6">
-            
+
             <div className="w-full z-10 transform -translate-y-[60px] px-6 flex flex-col items-center justify-center md:flex-row md:items-start gap-4 bg-white rounded-lg p-4 shadow-md max-w-6xl mx-auto md:-translate-y-[60px] lg:-translate-y-[60px] sm:-translate-y-[0px]">
 
                 {/* Logo e título */}
@@ -241,7 +255,7 @@ export default function NavSearch({
                                     placeholder="Digite o número de carteira ou nome"
                                     value={localSearch}
                                     onChange={(e) => handleInputChange(e.target.value)}
-                                    disabled={!itemSelected} // Desativa o campo se nenhuma profissão for selecionada
+                                    disabled={!itemSelected}
                                 />
                                 <Button
                                     type="submit"
@@ -261,8 +275,8 @@ export default function NavSearch({
 
             {/* Modal para mostrar resultados */}
             <Modal
-                open={open}
-                onClose={() => setOpen(false)}
+                open={isOpen}
+                onClose={handleCloseModal}
                 disableEnforceFocus
                 disableAutoFocus
                 style={{ overflow: 'hidden' }}
@@ -276,7 +290,7 @@ export default function NavSearch({
                         maxWidth: viewMode === "details" ? '600px' : '900px',
                         maxHeight: '90vh',
                         position: 'absolute',
-                        margin:"",
+                        margin: "",
                         top: '50%',
                         left: '50%',
                         transform: 'translate(-50%, -50%)',
@@ -288,14 +302,14 @@ export default function NavSearch({
                 >
                     <div>
                         <div className="h-0 text-end">
-                            <IconButton onClick={() => setOpen(false)}>
+                            <IconButton onClick={handleCloseModal}>
                                 <CloseIcon />
                             </IconButton>
                         </div>
 
                         <Box display="flex" justifyContent="center" alignItems="center">
                             <Typography variant="h6" color="black">
-                                {viewMode === "list" ? <img src={cnpPesquisa} alt="" /> : <img src={cnpLogo} alt="" /> }
+                                {viewMode === "list" ? <img src={cnpPesquisa} alt="" /> : <img src={cnpLogo} alt="" />}
                             </Typography>
                         </Box>
                     </div>
